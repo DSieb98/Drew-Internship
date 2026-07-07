@@ -92,7 +92,8 @@ docs/specs/            — project specifications (master plan + per-milestone f
 | # | Decision | Milestone |
 |---|----------|-----------|
 | D-07 | Browser-only fresh rebuild; prototype is reference only | M0 |
-| D-08 | Stack: React 18 + TS 5 + Vite 5 + HashRouter + focus-trap-react | M0-T01 |
-| D-09 | Deploy: GitHub Pages (static dist/ from `npm run build`) | M0-T01 |
-| D-10 | Store contract is async from the start (all actions return Promise<void>) | M0-T01 |
-| D-11 | Section nav uses `<nav>` + `aria-current` links, not ARIA tablist | M0-T01 |
+| D-16 | Stack: React 18 + TS 5 + Vite 5 + HashRouter + focus-trap-react | M0-T01 |
+| D-17 | Deploy: GitHub Pages (static dist/ from `npm run build`) | M0-T01 |
+| D-18 | Store contract is async from the start (all actions return Promise<void>) | M0-T01 |
+| D-19 | Section nav uses `<nav>` + `aria-current` links, not ARIA tablist | M0-T01 |
+| D-20 | Lead import uses SheetJS (xlsx, Apache 2.0) parsed entirely client-side; no lead data leaves the browser | M0-T02 |

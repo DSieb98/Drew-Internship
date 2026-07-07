@@ -7,9 +7,11 @@ interface FocusTrapDialogProps {
   /** Accessible name announced by screen readers when the dialog opens. */
   label: string
   children: ReactNode
+  /** Label for the close/dismiss button. Defaults to "Dismiss". */
+  closeLabel?: string
 }
 
-export default function FocusTrapDialog({ open, onClose, label, children }: FocusTrapDialogProps) {
+export default function FocusTrapDialog({ open, onClose, label, children, closeLabel = 'Dismiss' }: FocusTrapDialogProps) {
   if (!open) return null
 
   return (
@@ -30,7 +32,7 @@ export default function FocusTrapDialog({ open, onClose, label, children }: Focu
         <div className="dialog-content">
           {children}
           <button type="button" className="dialog-close" onClick={onClose}>
-            Dismiss
+            {closeLabel}
           </button>
         </div>
       </div>
