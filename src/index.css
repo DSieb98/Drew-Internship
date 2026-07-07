@@ -1,0 +1,190 @@
+/* ── Reset ───────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  color: #1a1a2e;
+  background: #f0f2f5;
+}
+
+/* ── Accessibility utilities ─────────────────────────────────── */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Skip link: hidden until focused, then drops in from top */
+.skip-link {
+  position: absolute;
+  top: -9999px;
+  left: 8px;
+  padding: 8px 16px;
+  background: #0f172a;
+  color: #f8fafc;
+  font-weight: 600;
+  font-size: 0.9375rem;
+  text-decoration: none;
+  border-radius: 0 0 6px 6px;
+  z-index: 9999;
+}
+.skip-link:focus-visible {
+  top: 0;
+  outline: 3px solid #f59e0b;
+  outline-offset: 2px;
+}
+
+/* ── App layout ──────────────────────────────────────────────── */
+.app-header {
+  background: #0f172a;
+  padding: 14px 24px;
+}
+
+.app-title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #f8fafc;
+  letter-spacing: -0.01em;
+}
+
+/* ── Navigation ──────────────────────────────────────────────── */
+.app-nav {
+  background: #1e293b;
+  border-bottom: 1px solid #334155;
+}
+
+.nav-list {
+  display: flex;
+  list-style: none;
+  margin: 0;
+  padding: 0 16px;
+  gap: 2px;
+  overflow-x: auto;
+}
+
+/* Suppress the bullet/marker from `role="list"` reset */
+.nav-list li { margin: 0; }
+
+.nav-link {
+  display: block;
+  padding: 12px 14px;
+  color: #94a3b8;
+  text-decoration: none;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  white-space: nowrap;
+  border-bottom: 3px solid transparent;
+}
+.nav-link:hover { color: #f1f5f9; }
+.nav-link:focus-visible {
+  outline: 3px solid #f59e0b;
+  outline-offset: -2px;
+  border-radius: 2px;
+}
+.nav-link--active,
+.nav-link[aria-current="page"] {
+  color: #f8fafc;
+  border-bottom-color: #f59e0b;
+}
+
+/* ── Main content ────────────────────────────────────────────── */
+#main-content {
+  padding: 28px 24px;
+  min-height: calc(100vh - 112px);
+  /* tabIndex={-1} allows programmatic focus for screen-reader nav;
+     suppress the browser's default focus ring since we move focus
+     intentionally (not via keyboard Tab), so no visible ring is expected. */
+  outline: none;
+}
+
+/* ── Page sections ───────────────────────────────────────────── */
+.page-heading {
+  margin: 0 0 20px;
+  font-size: 1.625rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.placeholder-content {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 28px 32px;
+  max-width: 680px;
+  color: #475569;
+  font-size: 0.9375rem;
+}
+.placeholder-content p { margin: 0; }
+
+/* Nurture / Reports "coming later" placeholders */
+.coming-later {
+  background: #fff;
+  border: 2px dashed #cbd5e1;
+  border-radius: 10px;
+  padding: 36px 32px;
+  max-width: 680px;
+  text-align: center;
+}
+.coming-later .badge {
+  display: inline-block;
+  background: #f1f5f9;
+  color: #64748b;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 4px 12px;
+  border-radius: 999px;
+  margin-bottom: 14px;
+}
+.coming-later p {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.9375rem;
+  line-height: 1.6;
+}
+
+/* ── Focus-trapped dialogs ───────────────────────────────────── */
+.dialog-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+}
+.dialog-content {
+  background: #fff;
+  border-radius: 10px;
+  padding: 28px;
+  max-width: 580px;
+  width: calc(100% - 48px);
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
+}
+.dialog-close {
+  margin-top: 20px;
+  padding: 8px 20px;
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: #334155;
+}
+.dialog-close:hover { background: #e2e8f0; }
+.dialog-close:focus-visible {
+  outline: 3px solid #f59e0b;
+  outline-offset: 2px;
+}
