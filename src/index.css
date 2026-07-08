@@ -420,3 +420,113 @@ body {
 }
 .interim-lead-company { font-weight: 600; color: #0f172a; }
 .interim-lead-detail  { color: #64748b; }
+
+/* ── Settings page ───────────────────────────────────────────── */
+.settings-form {
+  max-width: 680px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.settings-group {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 20px 24px;
+  margin: 0;
+}
+
+.settings-group-legend {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #0f172a;
+  padding: 0 6px;
+}
+
+.settings-group-help {
+  margin: 4px 0 16px;
+  font-size: 0.875rem;
+  color: #64748b;
+  line-height: 1.5;
+}
+
+.settings-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-bottom: 14px;
+}
+.settings-field:last-child { margin-bottom: 0; }
+
+.settings-field-label {
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: #1e293b;
+}
+
+.settings-field-input {
+  width: 140px;
+  padding: 7px 10px;
+  font-size: 0.9375rem;
+  color: #1e293b;
+  background: #fff;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+}
+.settings-field-input:focus-visible {
+  outline: 3px solid #f59e0b;
+  outline-offset: 2px;
+}
+.settings-field-input--error { border-color: #f87171; }
+
+.settings-field-error {
+  font-size: 0.875rem;
+  color: #b91c1c;
+  margin: 0;
+}
+
+/* Tier table */
+.settings-tier-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9375rem;
+  margin-top: 4px;
+}
+.settings-tier-table th {
+  text-align: left;
+  padding: 6px 10px 8px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid #e2e8f0;
+}
+.settings-tier-table td {
+  padding: 6px 10px;
+  vertical-align: middle;
+}
+.settings-tier-table .settings-field-input { width: 110px; }
+
+.settings-tier-above {
+  color: #64748b;
+  font-style: italic;
+  font-size: 0.875rem;
+}
+
+.settings-tier-error-cell { padding-left: 8px; }
+
+.settings-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding-bottom: 8px;
+}
+
+.settings-saved {
+  margin: 0;
+  color: #166534;
+  font-size: 0.9375rem;
+  font-weight: 500;
+}

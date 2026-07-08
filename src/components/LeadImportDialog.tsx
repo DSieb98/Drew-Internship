@@ -46,6 +46,7 @@ function rowToLead(row: Record<string, string>, mapping: Record<string, string |
     dealValue:       getNum('dealValue') ?? 0,
     stage:           get('stage'),
     score:           0,
+    scoreBreakdown:  [],
     status:          'Cold',
     statusOverride:  null,
     pinned:          false,

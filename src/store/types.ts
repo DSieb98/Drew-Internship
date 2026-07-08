@@ -1,3 +1,22 @@
+// ── Tier (used by scoring Settings) ──────────────────────────────────────────
+
+export const TOP_TIER_MAX = 2_000_000_000
+
+export interface Tier {
+  min: number
+  max: number    // TOP_TIER_MAX for the "and above" top tier
+  points: number
+}
+
+// ── Score breakdown ───────────────────────────────────────────────────────────
+
+export interface ScoreCriterionResult {
+  id: string
+  label: string
+  maxPoints: number
+  earnedPoints: number
+}
+
 // ── Lead ──────────────────────────────────────────────────────────────────────
 
 export interface Lead {
@@ -16,6 +35,7 @@ export interface Lead {
   stage: string
   // Scoring (computed by T03 scoring engine)
   score: number
+  scoreBreakdown: ScoreCriterionResult[]
   // Status: derived from score via configurable thresholds (REQ-12),
   // overridable by Tim via statusOverride.
   status: 'Hot' | 'Warm' | 'Cold'
@@ -58,12 +78,26 @@ export interface Settings {
   hotScoreThreshold: number    // score ≥ this → Hot
   warmScoreThreshold: number   // score ≥ this → Warm; below → Cold
 
+  // Qualification cutoff (REQ-03). Default 0 until Greg & Tim confirm.
+  scoreQualificationThreshold: number
+
   // Hot-lead alert filter (REQ-07). Configurable in Settings (T09).
   hotAlertMinDealValue: number // qualifying lead must have dealValue ≥ this
 
   // Deal-value label thresholds (DV-01). Configurable in Settings (T09).
   dealHighThreshold: number    // dealValue ≥ this → 'High'
   dealMediumThreshold: number  // dealValue ≥ this → 'Medium'; below → 'Low'
+
+  // Employee count tiers (S-02, max 11 pts). Always exactly 4 tiers.
+  employeeTiers: [Tier, Tier, Tier, Tier]
+
+  // Annual revenue tiers (S-03, max 11 pts). Always exactly 4 tiers.
+  revenueTiers: [Tier, Tier, Tier, Tier]
+
+  // Promo product points (S-06, 3 levels).
+  promoInterestPoints: number        // has inquired
+  promoOneOrderPoints: number        // placed one order
+  promoMultipleOrdersPoints: number  // repeat buyer
 
   // Gone-quiet threshold. Configurable in Settings (T09).
   nurtureSilenceDays: number   // days since lastContactDate → show "gone quiet" cue
