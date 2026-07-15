@@ -401,6 +401,14 @@ export default function SettingsPage() {
             error={errors.nurtureSilenceDays}
             onChange={n => setNum('nurtureSilenceDays', n)}
           />
+          <NumField
+            label="Recent activity window (days) — shown on Today page"
+            id="recent-activity-days"
+            value={draft.recentActivityDays}
+            min={1}
+            error={errors.recentActivityDays}
+            onChange={n => setNum('recentActivityDays', n)}
+          />
         </fieldset>
 
         {/* ── Save ──────────────────────────────────────────────── */}

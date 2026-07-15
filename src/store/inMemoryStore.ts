@@ -33,6 +33,7 @@ const DEFAULT_SETTINGS: Settings = {
   promoOneOrderPoints: 10,
   promoMultipleOrdersPoints: 15,
   nurtureSilenceDays: 14,
+  recentActivityDays: 7,
 }
 
 // ── Scoring helper ─────────────────────────────────────────────────────────────

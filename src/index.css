@@ -421,6 +421,208 @@ body {
 .interim-lead-company { font-weight: 600; color: #0f172a; }
 .interim-lead-detail  { color: #64748b; }
 
+/* ── T04: Lead card ──────────────────────────────────────────── */
+.lead-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 14px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.lead-card-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.lead-card-status {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 2px 9px;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+.lead-card-status--hot  { background: #fef2f2; color: #b91c1c; border: 1px solid #fca5a5; }
+.lead-card-status--warm { background: #fffbeb; color: #92400e; border: 1px solid #fde68a; }
+.lead-card-status--cold { background: #f0f9ff; color: #0369a1; border: 1px solid #bae6fd; }
+
+.lead-card-company {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #0f172a;
+  flex: 1 1 auto;
+}
+
+.lead-card-gone-quiet {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #6b21a8;
+  background: #faf5ff;
+  border: 1px solid #d8b4fe;
+  padding: 2px 8px;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+
+.lead-card-contact {
+  margin: 0;
+  font-size: 0.875rem;
+  color: #475569;
+}
+
+.lead-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 0.875rem;
+  color: #64748b;
+}
+
+.lead-card-meta-item { white-space: nowrap; }
+
+.lead-card-dv {
+  font-weight: 600;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-right: 4px;
+}
+.lead-card-dv--high   { color: #166534; }
+.lead-card-dv--medium { color: #92400e; }
+.lead-card-dv--low    { color: #475569; }
+
+.lead-card-tz {
+  font-size: 0.8125rem;
+  color: #64748b;
+}
+.lead-card-tz--bad-hour { color: #b45309; }
+.lead-card-tz-warning   { font-weight: 600; }
+
+/* ── T04: Today page ─────────────────────────────────────────── */
+.hot-alert {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  background: #fef2f2;
+  border: 2px solid #fca5a5;
+  border-radius: 10px;
+  padding: 14px 18px;
+  margin-bottom: 28px;
+}
+
+.hot-alert-badge {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #b91c1c;
+  background: #fff;
+  border: 1px solid #fca5a5;
+  padding: 2px 10px;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+
+.hot-alert-company {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #7f1d1d;
+}
+.hot-alert-contact { font-size: 0.9375rem; color: #991b1b; }
+.hot-alert-value   { font-size: 0.9375rem; color: #991b1b; font-weight: 600; }
+
+.today-section { margin-bottom: 32px; }
+
+.today-section-heading {
+  margin: 0 0 14px;
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.today-section-count {
+  font-weight: 500;
+  color: #64748b;
+}
+
+.today-empty {
+  margin: 0;
+  color: #94a3b8;
+  font-size: 0.9375rem;
+}
+
+.today-activity-summary {
+  margin: 0 0 12px;
+  font-size: 0.9375rem;
+  color: #64748b;
+}
+
+.today-quiet-notice {
+  margin: 0;
+  padding: 12px 18px;
+  background: #faf5ff;
+  border: 1px solid #d8b4fe;
+  border-radius: 8px;
+  font-size: 0.9375rem;
+  color: #6b21a8;
+}
+
+/* ── T04: Shared leads list ──────────────────────────────────── */
+.leads-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 760px;
+}
+
+/* ── T04: Filter bar (All Leads) ─────────────────────────────── */
+.leads-filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.filter-btn {
+  padding: 7px 16px;
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: #334155;
+  cursor: pointer;
+}
+.filter-btn:hover { background: #e2e8f0; }
+.filter-btn:focus-visible {
+  outline: 3px solid #f59e0b;
+  outline-offset: 2px;
+}
+.filter-btn--active {
+  background: #0f172a;
+  color: #f8fafc;
+  border-color: #0f172a;
+}
+.filter-btn-count { color: inherit; opacity: 0.7; }
+.filter-btn--active .filter-btn-count { opacity: 0.8; }
+
+.leads-count {
+  margin: 0 0 16px;
+  font-size: 0.875rem;
+  color: #64748b;
+}
+
 /* ── Settings page ───────────────────────────────────────────── */
 .settings-form {
   max-width: 680px;

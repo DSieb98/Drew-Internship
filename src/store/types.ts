@@ -101,6 +101,9 @@ export interface Settings {
 
   // Gone-quiet threshold. Configurable in Settings (T09).
   nurtureSilenceDays: number   // days since lastContactDate → show "gone quiet" cue
+
+  // Recent-activity window on Today page. Configurable in Settings (T04).
+  recentActivityDays: number   // leads contacted within this many days appear in Recent Activity
 }
 
 // ── Store contract ─────────────────────────────────────────────────────────────
