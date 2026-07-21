@@ -180,6 +180,18 @@ export default function SettingsPage() {
     return e
   }
 
+  function handleFormKeyDown(e: React.KeyboardEvent<HTMLFormElement>) {
+    if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return
+    const focusable = Array.from(
+      e.currentTarget.querySelectorAll<HTMLElement>('input, button, select, textarea')
+    ).filter(el => !(el as HTMLInputElement).disabled)
+    const idx = focusable.indexOf(document.activeElement as HTMLElement)
+    if (idx === -1) return
+    e.preventDefault()
+    if (e.key === 'ArrowDown' && idx < focusable.length - 1) focusable[idx + 1].focus()
+    if (e.key === 'ArrowUp'   && idx > 0)                   focusable[idx - 1].focus()
+  }
+
   async function handleSave(e: React.FormEvent) {
     e.preventDefault()
     const errs = validate()
@@ -198,7 +210,7 @@ export default function SettingsPage() {
     <section aria-labelledby="settings-heading">
       <h2 id="settings-heading" className="page-heading">Settings</h2>
 
-      <form className="settings-form" onSubmit={handleSave} noValidate>
+      <form className="settings-form" onSubmit={handleSave} onKeyDown={handleFormKeyDown} noValidate>
 
         {/* ── Status thresholds ─────────────────────────────────── */}
         <fieldset className="settings-group">
