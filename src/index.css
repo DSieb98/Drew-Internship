@@ -1001,3 +1001,77 @@ body {
   align-items: center;
   text-decoration: none;
 }
+
+/* ── T06: Map view ───────────────────────────────────────────── */
+.map-filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 10px;
+}
+
+.map-city-filter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9375rem;
+  color: #334155;
+}
+.map-city-filter select {
+  padding: 6px 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 0.9375rem;
+  color: #0f172a;
+  background: #fff;
+}
+.map-city-filter select:focus-visible {
+  outline: 3px solid #f59e0b;
+  outline-offset: 2px;
+}
+
+.map-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  margin-bottom: 12px;
+  font-size: 0.875rem;
+  color: #475569;
+}
+.map-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.map-container {
+  max-width: 720px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #f8fafc;
+  padding: 12px;
+  margin-bottom: 24px;
+}
+.usa-map {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.usa-map-states path {
+  fill: #e2e8f0;
+  stroke: #ffffff;
+  stroke-width: 0.75;
+}
+
+.usa-map-pin {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 1px solid #ffffff;
+}
+circle.usa-map-pin { stroke: #ffffff; stroke-width: 1; }
+.usa-map-pin--hot  { fill: #dc2626; background: #dc2626; }
+.usa-map-pin--warm { fill: #d97706; background: #d97706; }
+.usa-map-pin--cold { fill: #0369a1; background: #0369a1; }
