@@ -3,6 +3,7 @@ import { useStore } from '../store/StoreContext'
 import { useAnnounce } from '../hooks/useAnnounce'
 import LeadImportDialog from '../components/LeadImportDialog'
 import LeadCard from '../components/LeadCard'
+import LeadDrawer from '../components/LeadDrawer'
 import type { Lead } from '../store/types'
 
 type Filter = 'all' | 'call-today' | 'follow-up' | 'gone-quiet'
@@ -28,6 +29,7 @@ export default function AllLeadsPage() {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [lastImportCount, setLastImportCount] = useState<number | null>(null)
   const [filter, setFilter] = useState<Filter>('all')
+  const [selectedLead, setSelectedLead] = useState<Lead | null>(null)
 
   const now = useMemo(() => new Date(), [])
 
@@ -126,7 +128,7 @@ export default function AllLeadsPage() {
             >
               {filteredLeads.map(lead => (
                 <li key={lead.id}>
-                  <LeadCard lead={lead} settings={settings} now={now} />
+                  <LeadCard lead={lead} settings={settings} now={now} onOpen={() => setSelectedLead(lead)} />
                 </li>
               ))}
             </ul>
@@ -139,6 +141,15 @@ export default function AllLeadsPage() {
         onClose={() => setDialogOpen(false)}
         onImported={handleImported}
       />
+
+      {selectedLead && (
+        <LeadDrawer
+          key={selectedLead.id}
+          lead={selectedLead}
+          onClose={() => setSelectedLead(null)}
+          settings={settings}
+        />
+      )}
     </section>
   )
 }

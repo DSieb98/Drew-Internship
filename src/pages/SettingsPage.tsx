@@ -423,6 +423,32 @@ export default function SettingsPage() {
           />
         </fieldset>
 
+        {/* ── AI features ──────────────────────────────────────── */}
+        <fieldset className="settings-group">
+          <legend className="settings-group-legend">AI Features</legend>
+          <p className="settings-group-help">
+            Enter your Anthropic API key to unlock AI call openers, next-step tips, and email
+            drafts in the lead drawer. The key is held in memory only and never leaves your browser.
+          </p>
+          <div className="settings-field">
+            <label htmlFor="anthropic-api-key" className="settings-field-label">
+              Anthropic API key
+            </label>
+            <input
+              id="anthropic-api-key"
+              type="password"
+              autoComplete="off"
+              className="settings-field-input settings-field-input--wide"
+              value={draft.anthropicApiKey}
+              placeholder="sk-ant-…"
+              onChange={e => {
+                setDraft(prev => ({ ...prev, anthropicApiKey: e.target.value }))
+                setSaved(false)
+              }}
+            />
+          </div>
+        </fieldset>
+
         {/* ── Save ──────────────────────────────────────────────── */}
         <div className="settings-actions">
           {saved && (

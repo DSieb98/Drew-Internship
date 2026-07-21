@@ -6,6 +6,7 @@ interface LeadCardProps {
   lead: Lead
   settings: Settings
   now?: Date
+  onOpen?: () => void
 }
 
 function dealValueLabel(value: number, settings: Settings): 'High' | 'Medium' | 'Low' {
@@ -21,7 +22,7 @@ function isGoneQuiet(lead: Lead, silenceDays: number, now: Date): boolean {
   return daysDiff >= silenceDays
 }
 
-export default function LeadCard({ lead, settings, now = new Date() }: LeadCardProps) {
+export default function LeadCard({ lead, settings, now = new Date(), onOpen }: LeadCardProps) {
   const tzInfo = useMemo(
     () => (lead.timezone ? getTZInfo(lead.timezone, now) : null),
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -83,6 +84,17 @@ export default function LeadCard({ lead, settings, now = new Date() }: LeadCardP
           {tzInfo.localTime} {tzInfo.abbreviation}
           {tzInfo.badHour && <span className="lead-card-tz-warning"> · Outside calling hours</span>}
         </div>
+      )}
+
+      {onOpen && (
+        <button
+          type="button"
+          className="lead-card-open-btn"
+          aria-label={`View details for ${lead.company}`}
+          onClick={onOpen}
+        >
+          View details
+        </button>
       )}
     </article>
   )

@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useStore } from '../store/StoreContext'
 import { useAnnounce } from '../hooks/useAnnounce'
 import LeadCard from '../components/LeadCard'
+import LeadDrawer from '../components/LeadDrawer'
 import type { Lead } from '../store/types'
 
 function daysSince(dateStr: string, now: Date): number {
@@ -18,6 +19,7 @@ export default function TodayPage() {
   const store = useStore()
   const announce = useAnnounce()
   const { leads, settings } = store
+  const [selectedLead, setSelectedLead] = useState<Lead | null>(null)
 
   // Stable "now" for the whole render (avoid per-card drift)
   const now = useMemo(() => new Date(), [])
@@ -81,6 +83,7 @@ export default function TodayPage() {
   }
 
   return (
+    <>
     <section aria-labelledby="today-heading">
       <h2 id="today-heading" className="page-heading">Today</h2>
 
@@ -117,7 +120,7 @@ export default function TodayPage() {
           <ul className="leads-list" aria-label={`Call today, ${hotLeads.length} ${hotLeads.length === 1 ? 'lead' : 'leads'}`}>
             {hotLeads.map(lead => (
               <li key={lead.id}>
-                <LeadCard lead={lead} settings={settings} now={now} />
+                <LeadCard lead={lead} settings={settings} now={now} onOpen={() => setSelectedLead(lead)} />
               </li>
             ))}
           </ul>
@@ -138,7 +141,7 @@ export default function TodayPage() {
           <ul className="leads-list" aria-label={`Follow-up needed, ${warmLeads.length} ${warmLeads.length === 1 ? 'lead' : 'leads'}`}>
             {warmLeads.map(lead => (
               <li key={lead.id}>
-                <LeadCard lead={lead} settings={settings} now={now} />
+                <LeadCard lead={lead} settings={settings} now={now} onOpen={() => setSelectedLead(lead)} />
               </li>
             ))}
           </ul>
@@ -161,7 +164,7 @@ export default function TodayPage() {
             >
               {recentlyContacted.map(lead => (
                 <li key={lead.id}>
-                  <LeadCard lead={lead} settings={settings} now={now} />
+                  <LeadCard lead={lead} settings={settings} now={now} onOpen={() => setSelectedLead(lead)} />
                 </li>
               ))}
             </ul>
@@ -180,5 +183,15 @@ export default function TodayPage() {
         ) : null
       })()}
     </section>
+
+      {selectedLead && (
+        <LeadDrawer
+          key={selectedLead.id}
+          lead={selectedLead}
+          onClose={() => setSelectedLead(null)}
+          settings={settings}
+        />
+      )}
+    </>
   )
 }

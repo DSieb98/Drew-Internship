@@ -9,9 +9,11 @@ interface FocusTrapDialogProps {
   children: ReactNode
   /** Label for the close/dismiss button. Defaults to "Dismiss". */
   closeLabel?: string
+  /** Extra CSS class appended to the inner dialog-content div. */
+  contentClassName?: string
 }
 
-export default function FocusTrapDialog({ open, onClose, label, children, closeLabel = 'Dismiss' }: FocusTrapDialogProps) {
+export default function FocusTrapDialog({ open, onClose, label, children, closeLabel = 'Dismiss', contentClassName }: FocusTrapDialogProps) {
   if (!open) return null
 
   return (
@@ -29,7 +31,7 @@ export default function FocusTrapDialog({ open, onClose, label, children, closeL
         aria-modal="true"
         className="dialog-overlay"
       >
-        <div className="dialog-content">
+        <div className={`dialog-content${contentClassName ? ` ${contentClassName}` : ''}`}>
           {children}
           <button type="button" className="dialog-close" onClick={onClose}>
             {closeLabel}

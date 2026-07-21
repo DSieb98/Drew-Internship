@@ -104,6 +104,10 @@ export interface Settings {
 
   // Recent-activity window on Today page. Configurable in Settings (T04).
   recentActivityDays: number   // leads contacted within this many days appear in Recent Activity
+
+  // Anthropic API key for AI features in the lead drawer (T05).
+  // Held in memory only — never persisted to disk.
+  anthropicApiKey: string
 }
 
 // ── Store contract ─────────────────────────────────────────────────────────────
