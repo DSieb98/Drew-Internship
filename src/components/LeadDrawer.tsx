@@ -1,5 +1,7 @@
 import { useRef, useState, useCallback } from 'react'
 import FocusTrapDialog from './FocusTrapDialog'
+import LogCallDialog from './LogCallDialog'
+import { useStore } from '../store/StoreContext'
 import { useAnnounce } from '../hooks/useAnnounce'
 import { askClaude } from '../utils/claudeApi'
 import type { Lead, Settings } from '../store/types'
@@ -30,13 +32,22 @@ interface LeadDrawerProps {
 }
 
 export default function LeadDrawer({ lead, onClose, settings }: LeadDrawerProps) {
+  const store = useStore()
   const announce = useAnnounce()
   const [activeTab, setActiveTab] = useState<TabId>('briefing')
   const [opener, setOpener] = useState<AiState>(INIT_AI)
   const [nextSteps, setNextSteps] = useState<AiState>(INIT_AI)
   const [email, setEmail] = useState<AiState>(INIT_AI)
   const [emailText, setEmailText] = useState('')
+  const [logCallOpen, setLogCallOpen] = useState(false)
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([])
+
+  function markAsCalled() {
+    if (!lead) return
+    const date = new Date().toISOString().split('T')[0]
+    store.updateLead(lead.id, { called: true, lastContactDate: date })
+    announce(`${lead.company} marked as called.`)
+  }
 
   const switchTab = useCallback((idx: number) => {
     setActiveTab(TABS[idx].id)
@@ -114,6 +125,7 @@ export default function LeadDrawer({ lead, onClose, settings }: LeadDrawerProps)
   const mailtoHref = `mailto:${encodeURIComponent(lead.email ?? '')}?body=${encodeURIComponent(emailText)}`
 
   return (
+    <>
     <FocusTrapDialog
       open
       onClose={onClose}
@@ -131,6 +143,9 @@ export default function LeadDrawer({ lead, onClose, settings }: LeadDrawerProps)
           >
             {lead.status}
           </span>
+          {lead.called && (
+            <span className="drawer-called-badge">Called</span>
+          )}
           <h2 className="drawer-company">{lead.company}</h2>
           {lead.contactName && (
             <p className="drawer-contact-name" aria-hidden="true">{lead.contactName}</p>
@@ -247,12 +262,14 @@ export default function LeadDrawer({ lead, onClose, settings }: LeadDrawerProps)
             </details>
           )}
 
-          {/* T08 entry points — wired up in the next update */}
           <div className="drawer-call-actions">
-            <button type="button" className="btn-secondary" disabled>Mark as called</button>
-            <button type="button" className="btn-secondary" disabled>Log a call</button>
+            <button type="button" className="btn-secondary" onClick={markAsCalled} disabled={lead.called}>
+              {lead.called ? 'Marked as called' : 'Mark as called'}
+            </button>
+            <button type="button" className="btn-secondary" onClick={() => setLogCallOpen(true)}>
+              Log a call
+            </button>
           </div>
-          <p className="drawer-actions-note">Call logging coming in the next update.</p>
         </div>
 
         {/* ── Call Opener panel ── */}
@@ -377,5 +394,7 @@ export default function LeadDrawer({ lead, onClose, settings }: LeadDrawerProps)
 
       </div>
     </FocusTrapDialog>
+    <LogCallDialog open={logCallOpen} onClose={() => setLogCallOpen(false)} lead={lead} />
+    </>
   )
 }

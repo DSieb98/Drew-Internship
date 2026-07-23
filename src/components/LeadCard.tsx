@@ -44,6 +44,7 @@ export default function LeadCard({ lead, settings, now = new Date(), onOpen, onT
     location ? `Location: ${location}` : null,
     lead.dealValue > 0 ? `Deal value: ${dvLabel}, $${lead.dealValue.toLocaleString()}` : null,
     quiet ? 'Gone quiet' : null,
+    lead.called ? 'Called' : null,
     lead.pinned ? 'Pinned to My List' : null,
     tzInfo ? `Local time: ${tzInfo.localTime} ${tzInfo.abbreviation}` : null,
     tzInfo?.badHour ? 'Outside good calling hours' : null,
@@ -56,6 +57,9 @@ export default function LeadCard({ lead, settings, now = new Date(), onOpen, onT
           {lead.status}
         </span>
         <span className="lead-card-company">{lead.company}</span>
+        {lead.called && (
+          <span className="lead-card-called" aria-hidden="true">Called</span>
+        )}
         {quiet && (
           <span className="lead-card-gone-quiet" aria-hidden="true">Gone quiet</span>
         )}
