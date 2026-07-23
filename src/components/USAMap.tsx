@@ -6,11 +6,13 @@ import usStatesTopology from 'us-atlas/states-albers-10m.json'
 import type { Lead } from '../store/types'
 import { geocodeLead } from '../utils/usGeo'
 
-// states-albers-10m.json ships geometry already projected with d3's default
-// geoAlbersUsa() (960x600 viewBox), so the state paths render with an identity
-// path (no projection) while lead coordinates are run through the same
-// projection to land in the same pixel space.
-const projection = geoAlbersUsa()
+// states-albers-10m.json ships geometry pre-projected with
+// geoAlbersUsa().scale(1300).translate([487.5, 305]) for a 975x610 viewport
+// (per the us-atlas README) — NOT d3's default scale/translate. The state
+// paths render with an identity path (no projection), and lead coordinates
+// must be run through this exact same projection to land in the same pixel
+// space as the pre-projected geometry.
+const projection = geoAlbersUsa().scale(1300).translate([487.5, 305])
 const statePath = geoPath()
 
 const topology = usStatesTopology as unknown as Topology
@@ -66,7 +68,7 @@ export default function USAMap({ leads }: USAMapProps) {
   return (
     <svg
       className="usa-map"
-      viewBox="0 0 960 600"
+      viewBox="0 0 975 610"
       role="presentation"
       aria-hidden="true"
       focusable="false"
