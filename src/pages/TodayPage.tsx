@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useStore } from '../store/StoreContext'
 import { useAnnounce } from '../hooks/useAnnounce'
+import { useTogglePin } from '../hooks/useTogglePin'
 import LeadCard from '../components/LeadCard'
 import LeadDrawer from '../components/LeadDrawer'
 import type { Lead } from '../store/types'
@@ -18,6 +19,7 @@ function isGoneQuiet(lead: Lead, silenceDays: number, now: Date): boolean {
 export default function TodayPage() {
   const store = useStore()
   const announce = useAnnounce()
+  const togglePin = useTogglePin()
   const { leads, settings } = store
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null)
 
@@ -120,7 +122,7 @@ export default function TodayPage() {
           <ul className="leads-list" aria-label={`Call today, ${hotLeads.length} ${hotLeads.length === 1 ? 'lead' : 'leads'}`}>
             {hotLeads.map(lead => (
               <li key={lead.id}>
-                <LeadCard lead={lead} settings={settings} now={now} onOpen={() => setSelectedLead(lead)} />
+                <LeadCard lead={lead} settings={settings} now={now} onOpen={() => setSelectedLead(lead)} onTogglePin={() => togglePin(lead)} />
               </li>
             ))}
           </ul>
@@ -141,7 +143,7 @@ export default function TodayPage() {
           <ul className="leads-list" aria-label={`Follow-up needed, ${warmLeads.length} ${warmLeads.length === 1 ? 'lead' : 'leads'}`}>
             {warmLeads.map(lead => (
               <li key={lead.id}>
-                <LeadCard lead={lead} settings={settings} now={now} onOpen={() => setSelectedLead(lead)} />
+                <LeadCard lead={lead} settings={settings} now={now} onOpen={() => setSelectedLead(lead)} onTogglePin={() => togglePin(lead)} />
               </li>
             ))}
           </ul>
@@ -164,7 +166,7 @@ export default function TodayPage() {
             >
               {recentlyContacted.map(lead => (
                 <li key={lead.id}>
-                  <LeadCard lead={lead} settings={settings} now={now} onOpen={() => setSelectedLead(lead)} />
+                  <LeadCard lead={lead} settings={settings} now={now} onOpen={() => setSelectedLead(lead)} onTogglePin={() => togglePin(lead)} />
                 </li>
               ))}
             </ul>

@@ -7,6 +7,7 @@ interface LeadCardProps {
   settings: Settings
   now?: Date
   onOpen?: () => void
+  onTogglePin?: () => void
 }
 
 function dealValueLabel(value: number, settings: Settings): 'High' | 'Medium' | 'Low' {
@@ -22,7 +23,7 @@ function isGoneQuiet(lead: Lead, silenceDays: number, now: Date): boolean {
   return daysDiff >= silenceDays
 }
 
-export default function LeadCard({ lead, settings, now = new Date(), onOpen }: LeadCardProps) {
+export default function LeadCard({ lead, settings, now = new Date(), onOpen, onTogglePin }: LeadCardProps) {
   const tzInfo = useMemo(
     () => (lead.timezone ? getTZInfo(lead.timezone, now) : null),
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -43,6 +44,7 @@ export default function LeadCard({ lead, settings, now = new Date(), onOpen }: L
     location ? `Location: ${location}` : null,
     lead.dealValue > 0 ? `Deal value: ${dvLabel}, $${lead.dealValue.toLocaleString()}` : null,
     quiet ? 'Gone quiet' : null,
+    lead.pinned ? 'Pinned to My List' : null,
     tzInfo ? `Local time: ${tzInfo.localTime} ${tzInfo.abbreviation}` : null,
     tzInfo?.badHour ? 'Outside good calling hours' : null,
   ].filter(Boolean).join('. ')
@@ -86,15 +88,30 @@ export default function LeadCard({ lead, settings, now = new Date(), onOpen }: L
         </div>
       )}
 
-      {onOpen && (
-        <button
-          type="button"
-          className="lead-card-open-btn"
-          aria-label={`View details for ${lead.company}`}
-          onClick={onOpen}
-        >
-          View details
-        </button>
+      {(onOpen || onTogglePin) && (
+        <div className="lead-card-actions">
+          {onTogglePin && (
+            <button
+              type="button"
+              className={`lead-card-pin-btn${lead.pinned ? ' lead-card-pin-btn--pinned' : ''}`}
+              aria-pressed={lead.pinned}
+              aria-label={lead.pinned ? `Unpin ${lead.company} from My List` : `Pin ${lead.company} to My List`}
+              onClick={onTogglePin}
+            >
+              <span aria-hidden="true">{lead.pinned ? '★' : '☆'}</span> {lead.pinned ? 'Pinned' : 'Pin'}
+            </button>
+          )}
+          {onOpen && (
+            <button
+              type="button"
+              className="lead-card-open-btn"
+              aria-label={`View details for ${lead.company}`}
+              onClick={onOpen}
+            >
+              View details
+            </button>
+          )}
+        </div>
       )}
     </article>
   )

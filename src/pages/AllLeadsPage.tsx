@@ -1,6 +1,7 @@
 import { useMemo, useRef, useEffect, useState } from 'react'
 import { useStore } from '../store/StoreContext'
 import { useAnnounce } from '../hooks/useAnnounce'
+import { useTogglePin } from '../hooks/useTogglePin'
 import LeadImportDialog from '../components/LeadImportDialog'
 import LeadCard from '../components/LeadCard'
 import LeadDrawer from '../components/LeadDrawer'
@@ -24,6 +25,7 @@ function isGoneQuiet(lead: Lead, silenceDays: number, now: Date): boolean {
 export default function AllLeadsPage() {
   const store = useStore()
   const announce = useAnnounce()
+  const togglePin = useTogglePin()
   const { leads, settings } = store
 
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -128,7 +130,7 @@ export default function AllLeadsPage() {
             >
               {filteredLeads.map(lead => (
                 <li key={lead.id}>
-                  <LeadCard lead={lead} settings={settings} now={now} onOpen={() => setSelectedLead(lead)} />
+                  <LeadCard lead={lead} settings={settings} now={now} onOpen={() => setSelectedLead(lead)} onTogglePin={() => togglePin(lead)} />
                 </li>
               ))}
             </ul>

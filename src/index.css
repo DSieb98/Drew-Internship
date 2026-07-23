@@ -740,9 +740,14 @@ body {
   font-size: 0.875rem;
 }
 
-/* ── Lead card open button ───────────────────────────────────── */
-.lead-card-open-btn {
+/* ── Lead card actions (open / pin) ──────────────────────────── */
+.lead-card-actions {
+  display: flex;
+  gap: 8px;
   margin-top: 10px;
+}
+
+.lead-card-open-btn {
   padding: 6px 14px;
   background: #f1f5f9;
   border: 1px solid #cbd5e1;
@@ -751,7 +756,7 @@ body {
   font-size: 0.875rem;
   font-weight: 500;
   color: #334155;
-  width: 100%;
+  flex: 1 1 auto;
   text-align: left;
 }
 .lead-card-open-btn:hover { background: #e2e8f0; }
@@ -759,6 +764,31 @@ body {
   outline: 3px solid #f59e0b;
   outline-offset: 2px;
 }
+
+/* ── T07: Pin button ──────────────────────────────────────────── */
+.lead-card-pin-btn {
+  padding: 6px 14px;
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #334155;
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+.lead-card-pin-btn:hover { background: #e2e8f0; }
+.lead-card-pin-btn:focus-visible {
+  outline: 3px solid #f59e0b;
+  outline-offset: 2px;
+}
+.lead-card-pin-btn--pinned {
+  background: #fffbeb;
+  border-color: #fbbf24;
+  color: #92400e;
+}
+.lead-card-pin-btn--pinned:hover { background: #fef3c7; }
 
 /* ── Lead drawer ─────────────────────────────────────────────── */
 
@@ -1075,3 +1105,65 @@ circle.usa-map-pin { stroke: #ffffff; stroke-width: 1; }
 .usa-map-pin--hot  { fill: #dc2626; background: #dc2626; }
 .usa-map-pin--warm { fill: #d97706; background: #d97706; }
 .usa-map-pin--cold { fill: #0369a1; background: #0369a1; }
+
+/* ── T07: Watchlist / My List ────────────────────────────────── */
+.watchlist-summary {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 12px 18px;
+  margin-bottom: 20px;
+}
+.watchlist-summary p {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.watchlist-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.watchlist-item {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 14px;
+}
+
+.watchlist-note {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.watchlist-note label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #334155;
+}
+.watchlist-note-badge {
+  font-weight: 500;
+  color: #64748b;
+}
+.watchlist-note-textarea {
+  width: 100%;
+  font-family: inherit;
+  font-size: 0.9375rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 10px 12px;
+  resize: vertical;
+  color: #0f172a;
+  background: #fff;
+}
+.watchlist-note-textarea:focus {
+  outline: 3px solid #f59e0b;
+  outline-offset: 2px;
+  border-color: #f59e0b;
+}
