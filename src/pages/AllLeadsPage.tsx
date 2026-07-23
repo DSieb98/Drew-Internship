@@ -5,6 +5,7 @@ import { useTogglePin } from '../hooks/useTogglePin'
 import LeadImportDialog from '../components/LeadImportDialog'
 import LeadCard from '../components/LeadCard'
 import LeadDrawer from '../components/LeadDrawer'
+import ExplainTerm from '../components/ExplainTerm'
 import type { Lead } from '../store/types'
 
 type Filter = 'all' | 'call-today' | 'follow-up' | 'gone-quiet'
@@ -93,6 +94,11 @@ export default function AllLeadsPage() {
       ) : (
         <>
           {/* Filter bar */}
+          <p className="leads-filter-intro">
+            Filter by status
+            <ExplainTerm id="hot-warm-cold" />
+            <ExplainTerm id="gone-quiet" />
+          </p>
           <div className="leads-filter-bar" role="group" aria-label="Filter leads">
             {(Object.keys(FILTER_LABELS) as Filter[]).map(f => {
               const count = f === 'all' ? leads.length

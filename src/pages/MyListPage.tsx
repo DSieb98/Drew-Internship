@@ -4,6 +4,7 @@ import { useAnnounce } from '../hooks/useAnnounce'
 import { useTogglePin } from '../hooks/useTogglePin'
 import LeadCard from '../components/LeadCard'
 import LeadDrawer from '../components/LeadDrawer'
+import ExplainTerm from '../components/ExplainTerm'
 import type { Lead, Settings } from '../store/types'
 
 interface WatchlistItemProps {
@@ -72,6 +73,7 @@ export default function MyListPage() {
   return (
     <section aria-labelledby="my-list-heading">
       <h2 id="my-list-heading" className="page-heading">My List</h2>
+      <ExplainTerm id="my-list" />
 
       {pinnedLeads.length === 0 ? (
         <div className="placeholder-content">

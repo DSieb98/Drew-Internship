@@ -5,6 +5,7 @@ import { useTogglePin } from '../hooks/useTogglePin'
 import USAMap from '../components/USAMap'
 import LeadCard from '../components/LeadCard'
 import LeadDrawer from '../components/LeadDrawer'
+import ExplainTerm from '../components/ExplainTerm'
 import type { Lead } from '../store/types'
 
 type StatusFilter = 'all' | 'Hot' | 'Warm' | 'Cold'
@@ -75,6 +76,7 @@ export default function MapPage() {
   return (
     <section aria-labelledby="map-heading">
       <h2 id="map-heading" className="page-heading">Map</h2>
+      <ExplainTerm id="good-calling-hours" />
 
       <div className="map-filter-bar" role="group" aria-label="Filter leads shown on the map">
         <div className="leads-filter-bar" role="group" aria-label="Filter by status">

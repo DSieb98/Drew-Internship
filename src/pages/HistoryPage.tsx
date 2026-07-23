@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useStore } from '../store/StoreContext'
 import LeadDrawer from '../components/LeadDrawer'
+import ExplainTerm from '../components/ExplainTerm'
 import type { CallLog, Lead } from '../store/types'
 
 function formatDate(dateStr: string): string {
@@ -38,6 +39,7 @@ export default function HistoryPage() {
   return (
     <section aria-labelledby="history-heading">
       <h2 id="history-heading" className="page-heading">History</h2>
+      <ExplainTerm id="call-log" />
 
       {sortedLogs.length === 0 ? (
         <div className="placeholder-content">

@@ -1,6 +1,7 @@
 import { useRef, useState, useCallback } from 'react'
 import FocusTrapDialog from './FocusTrapDialog'
 import LogCallDialog from './LogCallDialog'
+import ExplainTerm from './ExplainTerm'
 import { useStore } from '../store/StoreContext'
 import { useAnnounce } from '../hooks/useAnnounce'
 import { askClaude } from '../utils/claudeApi'
@@ -207,7 +208,7 @@ export default function LeadDrawer({ lead, onClose, settings }: LeadDrawerProps)
             )}
             {lead.dealValue > 0 && (
               <>
-                <dt>Deal value</dt>
+                <dt>Deal value <ExplainTerm id="deal-value-label" /></dt>
                 <dd>
                   <span className={`drawer-dv drawer-dv--${dvLabel.toLowerCase()}`}>{dvLabel}</span>
                   {' $'}{lead.dealValue.toLocaleString()}
@@ -238,7 +239,7 @@ export default function LeadDrawer({ lead, onClose, settings }: LeadDrawerProps)
                 <dd>${lead.annualRevenue.toLocaleString()}</dd>
               </>
             )}
-            <dt>Score</dt>
+            <dt>Score <ExplainTerm id="lead-score" /></dt>
             <dd>{lead.score} / 100</dd>
             {lead.lastContactDate && (
               <>
@@ -282,6 +283,7 @@ export default function LeadDrawer({ lead, onClose, settings }: LeadDrawerProps)
         >
           <p className="drawer-ai-intro">
             A natural opener for your call with {lead.contactName || lead.company}.
+            <ExplainTerm id="ai-call-opener" />
           </p>
           {opener.status === 'error' && (
             <p className="drawer-ai-error" role="alert">{opener.error}</p>
@@ -315,6 +317,7 @@ export default function LeadDrawer({ lead, onClose, settings }: LeadDrawerProps)
         >
           <p className="drawer-ai-intro">
             Suggested next moves for {lead.company}.
+            <ExplainTerm id="ai-next-steps" />
           </p>
           {nextSteps.status === 'error' && (
             <p className="drawer-ai-error" role="alert">{nextSteps.error}</p>
@@ -348,6 +351,7 @@ export default function LeadDrawer({ lead, onClose, settings }: LeadDrawerProps)
         >
           <p className="drawer-ai-intro">
             AI-drafted email for {lead.contactName || lead.company}. Edit before sending.
+            <ExplainTerm id="ai-email-draft" />
           </p>
           {email.status === 'error' && (
             <p className="drawer-ai-error" role="alert">{email.error}</p>

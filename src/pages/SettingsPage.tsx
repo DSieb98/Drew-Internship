@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useStore } from '../store/StoreContext'
 import { useAnnounce } from '../hooks/useAnnounce'
+import ExplainTerm from '../components/ExplainTerm'
 import type { Settings, Tier } from '../store/types'
 
 // Keys in Settings whose values are plain numbers (not Tier[])
@@ -243,6 +244,7 @@ export default function SettingsPage() {
           <p className="settings-group-help">
             Leads scoring at or above this enter the main pipeline.
             Currently set to 0 (all leads qualify) until Greg and Tim confirm the number.
+            <ExplainTerm id="pipeline-qualification" />
           </p>
           <NumField
             label="Score qualification cutoff (0 = all leads qualify)"

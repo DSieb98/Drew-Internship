@@ -4,6 +4,7 @@ import { useAnnounce } from '../hooks/useAnnounce'
 import { useTogglePin } from '../hooks/useTogglePin'
 import LeadCard from '../components/LeadCard'
 import LeadDrawer from '../components/LeadDrawer'
+import ExplainTerm from '../components/ExplainTerm'
 import type { Lead } from '../store/types'
 
 function daysSince(dateStr: string, now: Date): number {
@@ -107,6 +108,7 @@ export default function TodayPage() {
           )}
         </div>
       )}
+      {alertLead && <ExplainTerm id="hot-lead-alert" />}
 
       {/* Call Today */}
       <section aria-labelledby="call-today-heading" className="today-section">
