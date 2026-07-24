@@ -65,6 +65,11 @@ export const EXPLANATIONS: Explanation[] = [
     text: 'An AI-written email you can edit before sending. Nothing is sent automatically — copy it to your clipboard or open it in your email program, and review it first.',
   },
   {
+    id: 'ai-assistant',
+    term: 'Ask your AI assistant',
+    text: 'Type a plain-English question about your leads — like "who should I call first?" — and get an answer based on real lead data. You choose how many leads (Hot only, Hot and Warm, or all) are included in each answer, so you control how much gets sent.',
+  },
+  {
     id: 'pipeline-qualification',
     term: 'Pipeline qualification cutoff',
     text: 'Leads scoring at or above this number are considered qualified for the main pipeline. Set to 0, every imported lead qualifies. Adjust it on the Settings page.',

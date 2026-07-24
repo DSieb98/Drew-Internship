@@ -8,7 +8,16 @@
       "Bash(git commit -m ' *)",
       "Bash(NODE_OPTIONS=--use-system-ca npm run preview -- --port 4173)",
       "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:4173/)",
-      "Bash(NODE_PATH=\"C:\\\\\\\\Users\\\\\\\\drews\\\\\\\\AppData\\\\\\\\Local\\\\\\\\npm-cache\\\\\\\\_npx\\\\\\\\e41f203b7505f1fb\\\\\\\\node_modules\" node \"C:/Users/drews/AppData/Local/Temp/claude/c--Users-drews-OneDrive-Desktop-Drew-Internship-26-Github-Repository-LeadGen/fafde623-3cb5-4786-aca0-9a0c6b3526bd/scratchpad/prod-check.js\")"
+      "Bash(NODE_PATH=\"C:\\\\\\\\Users\\\\\\\\drews\\\\\\\\AppData\\\\\\\\Local\\\\\\\\npm-cache\\\\\\\\_npx\\\\\\\\e41f203b7505f1fb\\\\\\\\node_modules\" node \"C:/Users/drews/AppData/Local/Temp/claude/c--Users-drews-OneDrive-Desktop-Drew-Internship-26-Github-Repository-LeadGen/fafde623-3cb5-4786-aca0-9a0c6b3526bd/scratchpad/prod-check.js\")",
+      "Bash(NODE_OPTIONS=--use-system-ca npm run typecheck)",
+      "Bash(find / -iname \"chromium-cli*\" -maxdepth 6 2>/dev/null | head -20; echo \"---npx playwright---\"; npx --yes playwright --version 2>&1 | head -5)",
+      "Read(//c//**)",
+      "Bash(taskkill //F //IM node.exe //T)",
+      "Bash(node -e \"console.log\\(require.resolve\\('playwright'\\)\\)\")",
+      "Bash(ls \"/c/Users/drews/AppData/Local/Temp/claude/c--Users-drews-OneDrive-Desktop-Drew-Internship-26-Github-Repository-LeadGen/70b0cf7e-a32b-4457-a778-a4f3894f89f5/scratchpad\" 2>&1)",
+      "Read(//c/Users/drews/AppData/Local/Temp/claude/c--Users-drews-OneDrive-Desktop-Drew-Internship-26-Github-Repository-LeadGen/70b0cf7e-a32b-4457-a778-a4f3894f89f5/scratchpad/**)",
+      "Bash(NODE_OPTIONS=--use-system-ca npm install playwright)",
+      "Bash(NODE_OPTIONS=--use-system-ca npx playwright install chromium)"
     ]
   }
 }

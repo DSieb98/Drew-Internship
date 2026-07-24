@@ -1,6 +1,7 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Routes, Route, useLocation } from 'react-router-dom'
 import AppNav from './nav/AppNav'
+import AskAiDialog from './components/AskAiDialog'
 import { useAnnounce } from './hooks/useAnnounce'
 import { useHelp } from './hooks/useHelp'
 import TodayPage from './pages/TodayPage'
@@ -46,6 +47,7 @@ function RouteAnnouncer() {
 
 export default function App() {
   const { openGlossary } = useHelp()
+  const [askAiOpen, setAskAiOpen] = useState(false)
 
   return (
     <>
@@ -54,10 +56,16 @@ export default function App() {
       </a>
       <header className="app-header">
         <h1 className="app-title">SalesForge</h1>
-        <button type="button" className="help-header-btn" onClick={openGlossary}>
-          Help &amp; glossary
-        </button>
+        <div className="app-header-actions">
+          <button type="button" className="help-header-btn" onClick={() => setAskAiOpen(true)}>
+            Ask AI assistant
+          </button>
+          <button type="button" className="help-header-btn" onClick={openGlossary}>
+            Help &amp; glossary
+          </button>
+        </div>
       </header>
+      <AskAiDialog open={askAiOpen} onClose={() => setAskAiOpen(false)} />
       <AppNav />
       <RouteAnnouncer />
       <main id="main-content" tabIndex={-1}>
