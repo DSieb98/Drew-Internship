@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git ls-remote *)",
+      "Bash(git rev-list *)",
+      "Bash(gh auth *)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:5176/)",
+      "Bash(git commit -m ' *)",
+      "Bash(NODE_OPTIONS=--use-system-ca npm run preview -- --port 4173)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:4173/)",
+      "Bash(NODE_PATH=\"C:\\\\\\\\Users\\\\\\\\drews\\\\\\\\AppData\\\\\\\\Local\\\\\\\\npm-cache\\\\\\\\_npx\\\\\\\\e41f203b7505f1fb\\\\\\\\node_modules\" node \"C:/Users/drews/AppData/Local/Temp/claude/c--Users-drews-OneDrive-Desktop-Drew-Internship-26-Github-Repository-LeadGen/fafde623-3cb5-4786-aca0-9a0c6b3526bd/scratchpad/prod-check.js\")"
+    ]
+  }
+}
