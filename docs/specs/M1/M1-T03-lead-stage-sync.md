@@ -18,7 +18,7 @@
 ## Constraints
 
 - Project-wide constraints (PRINCIPLE-01/02/03).
-- **Hard block: cannot proceed until B-01 is resolved.** Do not hand this task to Claude Code with placeholder/unconfirmed stage names.
+- **B-01 resolved 2026-08-04** — confirmed stage names available in `M2-pipeline-nurture-persistence.md`; this task is no longer blocked on it (still blocked on T00/T02 per the depends-on above).
 - PRINCIPLE-01: in any disagreement, LACRM's data wins (full conflict handling in T05, but this task's basic sync direction must respect that priority).
 
 ## Acceptance criteria

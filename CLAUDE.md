@@ -76,6 +76,8 @@ src/
     LiveRegion.tsx     — polite aria-live region + AnnounceContext provider
     FocusTrapDialog.tsx — generic focus-trapped modal shell
 docs/specs/            — project specifications (master plan + per-milestone files)
+worker/                — Cloudflare Worker credential proxy (D-21); separate deploy from the
+                          static app, see worker/README.md
 ```
 
 ## Accessibility Rules (PRINCIPLE-03 — applies to every task)
@@ -97,3 +99,4 @@ docs/specs/            — project specifications (master plan + per-milestone f
 | D-18 | Store contract is async from the start (all actions return Promise<void>) | M0-T01 |
 | D-19 | Section nav uses `<nav>` + `aria-current` links, not ARIA tablist | M0-T01 |
 | D-20 | Lead import uses SheetJS (xlsx, Apache 2.0) parsed entirely client-side; no lead data leaves the browser | M0-T02 |
+| D-21 | Credential architecture: a Cloudflare Worker (`worker/`) holds the LACRM + Anthropic API keys server-side and exposes two purpose-built endpoints (`/api/anthropic/chat`, `/api/lacrm/ping`); the app calls the Worker, never the upstream APIs directly. First exception to "browser-only, no server" — GitHub Pages deploy (D-17) is unchanged, the Worker is a separate deploy. Free tier ($0 at this traffic scale). See `docs/specs/M1/M1-T00-credential-architecture.md` and `worker/README.md`. | M1-T00 |

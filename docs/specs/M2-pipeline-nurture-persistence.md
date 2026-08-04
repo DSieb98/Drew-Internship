@@ -13,22 +13,37 @@ REQ-09 needs the app's stage names to match LACRM's exactly so Tim never has to 
 one name into another (B-01). REQ-10's nurture state has nowhere durable to live until M1 exists
 (B-03), and it carries a known bug. Both are unblocked once M1 lands.
 
-## B-01 — confirmed LACRM stage names (INSERT BEFORE HANDOFF)
+## B-01 — confirmed LACRM stage names (RESOLVED 2026-08-04)
 
-> The app currently uses: `New Lead, Contacted, Qualified, Proposal Sent, Quote Requested,
-> Follow-Up, Sample Sent`. The spec's CRM approved-scope list differs. Drew has the confirmed
-> names. **Paste the exact, ordered LACRM stage list here before handing this milestone to Claude
-> Code:**
+> Confirmed, ordered LACRM pipeline stages (Drew, 2026-08-04):
 >
 > ```
-> 1. <stage>
-> 2. <stage>
-> ...
+> 1. Discovery Call
+> 2. Needs Analysis
+> 3. Sample Box Sent
+> 4. Quote
+> 5. First Order
+> 6. Long-term Relationship
 > ```
 >
-> Reconciliation rule (from spec §5): align the app's stages to these confirmed names exactly. For
-> any app stage that has no LACRM equivalent, or any LACRM stage the app lacks, resolve the
-> mapping explicitly rather than guessing.
+> This matches REQ-09's documented flow exactly, with `Qualified` (the CRM stage REQ-04 sets on
+> auto-creation) as the entry stage before `Discovery Call`. Full confirmed flow:
+> `Qualified → Discovery Call → Needs Analysis → Sample Box Sent → Quote → First Order →
+> Long-term Relationship`.
+>
+> The app's current placeholder stages are: `New Lead, Contacted, Qualified, Proposal Sent,
+> Quote Requested, Follow-Up, Sample Sent`. Reconciliation rule (from spec §5): align the app's
+> stages to the confirmed names exactly. Flagged ambiguities for T01 to resolve explicitly, not
+> guess:
+> - `New Lead` and `Contacted` have no LACRM equivalent — these look like pre-qualification
+>   SalesForge-only states that occur before REQ-04 creates the CRM record at `Qualified`, not
+>   LACRM pipeline stages at all. Confirm with Drew whether they stay as an app-only pre-stage or
+>   get dropped.
+> - `Proposal Sent` and `Quote Requested` both plausibly collapse into the single confirmed
+>   `Quote` stage — do not silently merge them; confirm which (if either) is redundant.
+> - `Follow-Up` has no confirmed equivalent — likely folds into `Needs Analysis` but not
+>   guaranteed; confirm before dropping it.
+> - `Sample Sent` maps cleanly to `Sample Box Sent` (naming difference only).
 
 ## In scope
 

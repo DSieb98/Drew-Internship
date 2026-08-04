@@ -78,11 +78,6 @@ export default function LeadDrawer({ lead, onClose, settings }: LeadDrawerProps)
     onResult?: (text: string) => void
   ) {
     if (!lead) return
-    if (!settings.anthropicApiKey) {
-      setter({ status: 'error', text: '', error: 'No API key — add it on the Settings page.' })
-      announce('No Anthropic API key. Add it on the Settings page to use AI features.')
-      return
-    }
     setter({ status: 'loading', text: '', error: '' })
     const featureLabel = type === 'opener' ? 'call opener' : type === 'next-steps' ? 'next steps' : 'email draft'
     announce(`Generating ${featureLabel}, please wait…`)
@@ -97,7 +92,7 @@ export default function LeadDrawer({ lead, onClose, settings }: LeadDrawerProps)
     }
 
     try {
-      const text = await askClaude(settings.anthropicApiKey, prompt)
+      const text = await askClaude(prompt)
       setter({ status: 'done', text, error: '' })
       onResult?.(text)
       const doneLabel = type === 'opener' ? 'Call opener ready.' : type === 'next-steps' ? 'Next steps ready.' : 'Email draft ready.'

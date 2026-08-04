@@ -1,0 +1,7 @@
+# Local dev secrets for `wrangler dev`.
+# Copy to worker/.dev.vars (gitignored) and fill in — never commit real values.
+# For production, set these with `wrangler secret put <NAME>` instead (see worker/README.md).
+
+ANTHROPIC_API_KEY=
+LACRM_USER_CODE=
+LACRM_API_TOKEN=

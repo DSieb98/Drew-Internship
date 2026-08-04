@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useStore } from '../store/StoreContext'
 import { useAnnounce } from '../hooks/useAnnounce'
 import ExplainTerm from '../components/ExplainTerm'
+import { pingLacrm } from '../utils/lacrmApi'
 import type { Settings, Tier } from '../store/types'
 
 // Keys in Settings whose values are plain numbers (not Tier[])
@@ -130,6 +131,17 @@ export default function SettingsPage() {
   const [draft, setDraft] = useState<Settings>(() => store.settings)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [saved, setSaved] = useState(false)
+  const [lacrmTest, setLacrmTest] = useState<'idle' | 'testing' | 'ok' | 'error'>('idle')
+  const [lacrmTestMessage, setLacrmTestMessage] = useState('')
+
+  async function testLacrmConnection() {
+    setLacrmTest('testing')
+    announce('Testing LACRM connection…')
+    const result = await pingLacrm()
+    setLacrmTest(result.ok ? 'ok' : 'error')
+    setLacrmTestMessage(result.message)
+    announce(result.message)
+  }
 
   function setNum(key: NumericKey, value: number) {
     setDraft(prev => ({ ...prev, [key]: value }))
@@ -425,29 +437,22 @@ export default function SettingsPage() {
           />
         </fieldset>
 
-        {/* ── AI features ──────────────────────────────────────── */}
+        {/* ── Connections ──────────────────────────────────────── */}
         <fieldset className="settings-group">
-          <legend className="settings-group-legend">AI Features</legend>
+          <legend className="settings-group-legend">Connections</legend>
           <p className="settings-group-help">
-            Enter your Anthropic API key to unlock AI call openers, next-step tips, and email
-            drafts in the lead drawer. The key is held in memory only and never leaves your browser.
+            AI call openers, next-step tips, and email drafts, plus the LACRM sync, run through a
+            secure credential proxy — no key needed here.
           </p>
           <div className="settings-field">
-            <label htmlFor="anthropic-api-key" className="settings-field-label">
-              Anthropic API key
-            </label>
-            <input
-              id="anthropic-api-key"
-              type="password"
-              autoComplete="off"
-              className="settings-field-input settings-field-input--wide"
-              value={draft.anthropicApiKey}
-              placeholder="sk-ant-…"
-              onChange={e => {
-                setDraft(prev => ({ ...prev, anthropicApiKey: e.target.value }))
-                setSaved(false)
-              }}
-            />
+            <button type="button" className="btn-secondary" onClick={testLacrmConnection} disabled={lacrmTest === 'testing'}>
+              {lacrmTest === 'testing' ? 'Testing LACRM connection…' : 'Test LACRM connection'}
+            </button>
+            {lacrmTest !== 'idle' && lacrmTest !== 'testing' && (
+              <p className={lacrmTest === 'ok' ? 'settings-saved' : 'dialog-error'} role="status">
+                {lacrmTestMessage}
+              </p>
+            )}
           </div>
         </fieldset>
 

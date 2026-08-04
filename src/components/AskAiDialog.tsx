@@ -75,12 +75,6 @@ export default function AskAiDialog({ open, onClose }: AskAiDialogProps) {
   async function handleAsk(e: React.FormEvent) {
     e.preventDefault()
     if (!question.trim()) return
-    if (!store.settings.anthropicApiKey) {
-      setStatus('error')
-      setError('No API key — add it on the Settings page.')
-      announce('No Anthropic API key. Add it on the Settings page to use the AI assistant.')
-      return
-    }
     setStatus('loading')
     setError('')
     setAnswer('')
@@ -101,7 +95,7 @@ ${leadLines}
 Question: ${question.trim()}`
 
     try {
-      const text = await askClaude(store.settings.anthropicApiKey, prompt)
+      const text = await askClaude(prompt)
       setStatus('done')
       setAnswer(text)
       announce('Answer ready.')

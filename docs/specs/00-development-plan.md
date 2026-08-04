@@ -27,14 +27,14 @@ is not done — see the spec's prototype-vs-production distinction.
 | :-- | :-- | :-- | :-- |
 | **M0** | Production Foundation | REQ-01, REQ-03, REQ-07(UI), REQ-08, REQ-12, TZ-01, DV-01, Settings, Watchlist, Call log/History | — |
 | **M1** | LACRM Integration | REQ-04 (two-way sync) | LACRM API verification (step 1 of M1) |
-| **M2** | Pipeline + Nurture Persistence | REQ-09, REQ-10 | M1 complete; B-01 stage names |
+| **M2** | Pipeline + Nurture Persistence | REQ-09, REQ-10 | M1 complete (B-01 stage names resolved) |
 | **M3** | Enrichment & Automation | REQ-02 (Clay.com), Make.com orchestration | M1 complete |
 | **M4** | Outreach & Alerts | REQ-05 (AI draft only), REQ-07 (push) | See §4 — largely deferred |
 | **M5** | Reporting | REQ-11 | M1 complete; B-06 scope |
 | **M6** | Operations | Monitoring, cost tracking, optimization | M1–M5 in production |
 
-**Dependency spine:** B-01 → M1 (REQ-04) → M2 (REQ-09 + REQ-10). M3, M5, M6 all sit
-downstream of M1 because nothing persists durably until LACRM sync exists.
+**Dependency spine:** M1 (REQ-04) → M2 (REQ-09 + REQ-10, B-01 stage names now resolved). M3, M5,
+M6 all sit downstream of M1 because nothing persists durably until LACRM sync exists.
 
 ---
 
@@ -49,8 +49,8 @@ made after v1.2:
    inspiration, not a design doc) and stays client-side.
 2. **Instantly.ai deferred indefinitely.** REQ-05 automated send and REQ-06 response capture
    leave the active roadmap (see §4).
-3. **B-01 resolved.** LACRM stage names are confirmed and must be inserted into M2 before that
-   milestone starts.
+3. **B-01 resolved (2026-08-04).** LACRM stage names are confirmed and inserted into M2's
+   placeholder — see `M2-pipeline-nurture-persistence.md`.
 
 ---
 
@@ -136,19 +136,21 @@ enrichment, REQ-09 stage sync (display only; app stage names do **not** match th
 CRM-stage list), REQ-10 nurture persistence (in-memory only; the `promoteModal` bug is present),
 REQ-11 reporting (placeholder page).
 
-### Stage-name mismatch (B-01)
+### Stage-name mismatch (B-01) — RESOLVED 2026-08-04
 
 App stages today: `New Lead, Contacted, Qualified, Proposal Sent, Quote Requested, Follow-Up,
-Sample Sent`. Spec's CRM approved-scope stages: `Discovery Call, Needs Analysis, Sample Box Sent,
-Quote, First Order, Long-Term Relationship`. These don't line up. Drew has the confirmed LACRM
-names — they must be dropped into M2 before that milestone is handed off.
+Sample Sent`. Confirmed LACRM stages (Drew, 2026-08-04): `Discovery Call, Needs Analysis,
+Sample Box Sent, Quote, First Order, Long-term Relationship` — matches the spec's approved-scope
+list exactly. Full mapping and flagged ambiguities (`Proposal Sent`/`Quote Requested` both
+collapsing toward `Quote`; `New Lead`/`Contacted`/`Follow-Up` having no direct LACRM equivalent)
+are recorded in `M2-pipeline-nurture-persistence.md` for T01 to resolve explicitly rather than
+guess.
 
 ---
 
 ## 7. Open questions for Drew
 
-1. **Confirmed LACRM stage names** — please paste the exact list (and order). M2 has a marked
-   placeholder waiting for them.
+1. ~~**Confirmed LACRM stage names**~~ — resolved 2026-08-04, see `M2-pipeline-nurture-persistence.md`.
 2. **M4** — drop it entirely now that Instantly is indefinitely deferred, or keep it as a parking
    spot for future outreach work?
 3. **G5 / AI-assistant PII** — fine to keep sending the full lead set to Anthropic for the

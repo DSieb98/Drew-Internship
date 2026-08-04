@@ -8,7 +8,7 @@
 
 - An LACRM API client (auth via T00's mechanism, read + write operations for leads/contacts).
 - A field-mapping layer: SalesForge lead shape ↔ LACRM contact/lead shape, covering every category PRINCIPLE-01 names (lead records, pipeline stages, nurture state, scores, hot alert status, call history, notes).
-- Pipeline stage name mapping — SalesForge's current stage vocabulary (New Lead, Contacted, Qualified, Proposal Sent, Quote Requested, Follow-Up, Sample Sent) reconciled against LACRM's actual stage names once B-01 is resolved.
+- Pipeline stage name mapping — SalesForge's current stage vocabulary (New Lead, Contacted, Qualified, Proposal Sent, Quote Requested, Follow-Up, Sample Sent) reconciled against LACRM's confirmed stage names (B-01, resolved — see `M2-pipeline-nurture-persistence.md` for the ordered list and flagged ambiguities to resolve here rather than guess).
 - Basic connectivity/auth error handling (e.g., invalid credential, rate limit) surfaced clearly, not silently swallowed.
 
 ## Out of scope

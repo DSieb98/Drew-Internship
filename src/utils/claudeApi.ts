@@ -1,42 +1,31 @@
 /**
  * Browser-safe Anthropic API helper.
- * Uses raw fetch because the @anthropic-ai/sdk targets Node.js.
- * Requires the `anthropic-dangerous-direct-browser-access` header so Anthropic
- * knows CORS is intentional for this single-user private tool.
+ * Calls the SalesForge credential proxy Worker (M1-T00) instead of Anthropic
+ * directly — the real API key lives server-side and never reaches the browser.
+ * See worker/README.md and docs/specs/M1/M1-T00-credential-architecture.md.
  */
 
-const API_URL = 'https://api.anthropic.com/v1/messages'
-const MODEL = 'claude-haiku-4-5'
+const WORKER_URL = import.meta.env.VITE_WORKER_URL
 
-interface AnthropicResponse {
-  content: Array<{ type: string; text: string }>
+interface ChatResponse {
+  text?: string
+  error?: string
 }
 
-interface AnthropicError {
-  error?: { message?: string }
-}
-
-export async function askClaude(apiKey: string, prompt: string): Promise<string> {
-  const res = await fetch(API_URL, {
-    method: 'POST',
-    headers: {
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true',
-      'content-type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: MODEL,
-      max_tokens: 1024,
-      messages: [{ role: 'user', content: prompt }],
-    }),
-  })
-
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({})) as AnthropicError
-    throw new Error(err.error?.message ?? `API error ${res.status}`)
+export async function askClaude(prompt: string): Promise<string> {
+  if (!WORKER_URL) {
+    throw new Error('AI assistant is not configured (missing VITE_WORKER_URL).')
   }
 
-  const data = await res.json() as AnthropicResponse
-  return data.content.find(b => b.type === 'text')?.text ?? ''
+  const res = await fetch(`${WORKER_URL}/api/anthropic/chat`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ prompt }),
+  })
+
+  const data = await res.json().catch(() => ({})) as ChatResponse
+  if (!res.ok) {
+    throw new Error(data.error ?? `API error ${res.status}`)
+  }
+  return data.text ?? ''
 }

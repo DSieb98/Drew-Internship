@@ -34,7 +34,6 @@ const DEFAULT_SETTINGS: Settings = {
   promoMultipleOrdersPoints: 15,
   nurtureSilenceDays: 14,
   recentActivityDays: 7,
-  anthropicApiKey: '',
 }
 
 // ── Scoring helper ─────────────────────────────────────────────────────────────

@@ -2,6 +2,7 @@
 .env
 *.key
 *.pem
+worker/.dev.vars
 
 # ── Lead data (PII — never committed) ────────────────────────────────
 data/
@@ -13,6 +14,7 @@ data/
 node_modules/
 dist/
 .next/
+worker/.wrangler/
 
 # ── OS ───────────────────────────────────────────────────────────────
 .DS_Store

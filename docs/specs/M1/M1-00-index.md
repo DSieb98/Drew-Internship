@@ -6,21 +6,19 @@ Every task inherits the project-wide constraints (PRINCIPLE-01/02/03, plain-lang
 
 ## Shared M1 constraint: this milestone is gated
 
-M1 cannot start until two blockers are resolved:
+Both blockers are now resolved:
 
-- **B-01** — exact LACRM pipeline stage names (owner: Drew).
-- **Client-side credential architecture** — how a public GitHub Pages static site holds/uses LACRM and Anthropic credentials without exposing secrets client-side (owner: Drew).
-
-T00 is the credential decision/spike itself. Every task from T01 onward is blocked on both items above — do not hand T01+ to Claude Code until they're resolved.
+- ~~**B-01** — exact LACRM pipeline stage names (owner: Drew).~~ **Resolved 2026-08-04** — confirmed list + reconciliation notes in `docs/specs/M2-pipeline-nurture-persistence.md`.
+- ~~**Client-side credential architecture**~~ **Resolved 2026-08-04 (D-21)** — Cloudflare Worker proxy built in `worker/`, decision writeup in `M1-T00-credential-architecture.md`. One-time manual account setup (Cloudflare account, LACRM API credentials, GitHub repo secrets) still needed from Drew before it's live in production — see `worker/README.md` — but T01+ are no longer architecturally blocked and can be handed to Claude Code.
 
 ## Build order
 
 | Task | Name | Covers | Depends on | Blocked by |
 | :-- | :-- | :-- | :-- | :-- |
 | **T00** | Credential architecture decision + implementation | Secure credential handling for LACRM + Anthropic calls from a static site | — | Drew's architecture decision |
-| **T01** | LACRM API client & field mapping | REQ-04 core — API client/adapter, SalesForge↔LACRM field mapping | T00 | B-01 (stage names) for full mapping |
+| **T01** | LACRM API client & field mapping | REQ-04 core — API client/adapter, SalesForge↔LACRM field mapping | T00 | — (B-01 resolved; stage names ready for mapping) |
 | **T02** | Async store swap | Swap M0's in-memory AppStore for an LACRM-backed store | T00, T01 | — |
-| **T03** | Lead records + pipeline stage sync | REQ-04 core + REQ-09 | T02 | B-01 (hard block) |
+| **T03** | Lead records + pipeline stage sync | REQ-04 core + REQ-09 | T02 | — (B-01 resolved) |
 | **T04** | Extended-state sync | REQ-04 expanded: nurture, hot-alert, call history, notes, scores | T02, T03 | — |
 | **T05** | Conflict resolution & "LACRM wins" handling | PRINCIPLE-01 | T02–T04 | — |
 | **T06** | Watchlist sync decision + implementation | M0-T07 pins/notes: LACRM sync vs. device-local | T02 | Drew's decision (open blocker 4) |
