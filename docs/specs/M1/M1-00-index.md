@@ -20,7 +20,7 @@ Both blockers are now resolved:
 | **T02** | Async store swap | Swap M0's in-memory AppStore for an LACRM-backed store | T00, T01 | — |
 | **T03** | Lead records + pipeline stage sync | REQ-04 core + REQ-09 | T02 | — (B-01 resolved) |
 | **T04** | Extended-state sync | REQ-04 expanded: hot-alert, call history, scores | T02, T03 | Done 2026-08-04 — nurture deferred to M2 (D-24), see `M1-T04-extended-state-sync.md` |
-| **T05** | Conflict resolution & "LACRM wins" handling | PRINCIPLE-01 | T02–T04 | — |
+| **T05** | Conflict resolution & "LACRM wins" handling | PRINCIPLE-01 | T02–T04 | Done 2026-08-04, see `M1-T05-conflict-resolution.md` |
 | **T06** | Watchlist sync decision + implementation | M0-T07 pins/notes: LACRM sync vs. device-local | T02 | Drew's decision (open blocker 4) |
 
 **Tight coupling note:** T03 and T04 both depend on T02's store swap being in place. T05's conflict-handling should be designed alongside T03/T04 rather than bolted on afterward, since retry/error paths touch the same sync code those tasks write.

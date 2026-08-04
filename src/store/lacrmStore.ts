@@ -26,10 +26,12 @@ import {
   Settings,
   StoreError,
   StoreLoading,
+  SyncState,
   TOP_TIER_MAX,
 } from './types'
 import { scoreLead, deriveStatus } from '../scoring/scoreLead'
 import { useAnnounce } from '../hooks/useAnnounce'
+import { withRetry, isOnline, OfflineError } from '../utils/retry'
 import {
   getAllLacrmContacts,
   createLacrmContact,
@@ -247,6 +249,12 @@ export function useLacrmStore(): AppStore {
   })
   const [loading, setLoading] = useState<StoreLoading>({ ...STATIC_LOADING, leads: true })
   const [error, setError] = useState<StoreError>(STATIC_ERROR)
+  const [syncState, setSyncState] = useState<SyncState>(() => ({
+    status: isOnline() ? 'idle' : 'offline',
+    pendingCount: 0,
+    lastError: null,
+    lastSyncedAt: null,
+  }))
   const announce = useAnnounce()
   const hydratedRef = useRef(false)
 
@@ -256,6 +264,68 @@ export function useLacrmStore(): AppStore {
   // UI never reads directly (Lead.stage is what's rendered).
   const pipelineRef = useRef<LacrmPipeline | null>(null)
   const pipelineItemIdsRef = useRef<Map<string, string>>(new Map())
+
+  // Browser connectivity, tracked independent of any in-flight write — this is what lets an
+  // "offline" sync status appear the instant the connection drops, not just the next time
+  // something tries (and fails) to write. See SyncStatusIndicator.tsx for how it's shown.
+  useEffect(() => {
+    function handleOffline() {
+      setSyncState(s => ({ ...s, status: 'offline' }))
+      announce("You're offline. Changes will not be saved to LACRM until you're back online.")
+    }
+    function handleOnline() {
+      setSyncState(s => ({ ...s, status: s.pendingCount > 0 ? 'syncing' : 'idle' }))
+      announce('Back online.')
+    }
+    window.addEventListener('offline', handleOffline)
+    window.addEventListener('online', handleOnline)
+    return () => {
+      window.removeEventListener('offline', handleOffline)
+      window.removeEventListener('online', handleOnline)
+    }
+  }, [announce])
+
+  // ── M1-T05: write-through retry/backoff + sync-state bookkeeping ────────
+  //
+  // Every LACRM write in this file goes through syncWrite() so retry policy,
+  // the pending counter, and the offline/error/idle status the UI shows are
+  // all handled in exactly one place instead of being reimplemented per call
+  // site. syncWrite rethrows on failure (OfflineError or RetryExhaustedError,
+  // see utils/retry.ts) — callers decide what "LACRM wins" means for their
+  // own optimistic state (usually: revert it).
+
+  function beginWrite() {
+    setSyncState(s => ({ ...s, pendingCount: s.pendingCount + 1, status: isOnline() ? 'syncing' : 'offline' }))
+  }
+
+  function endWriteSuccess() {
+    setSyncState(s => {
+      const pendingCount = Math.max(0, s.pendingCount - 1)
+      return { pendingCount, status: pendingCount > 0 ? s.status : 'idle', lastError: null, lastSyncedAt: new Date().toISOString() }
+    })
+  }
+
+  function endWriteFailure(err: unknown): string {
+    const offline = err instanceof OfflineError
+    const message = err instanceof Error ? err.message : 'Something went wrong.'
+    setSyncState(s => {
+      const pendingCount = Math.max(0, s.pendingCount - 1)
+      return { ...s, pendingCount, status: offline ? 'offline' : 'error', lastError: offline ? s.lastError : message }
+    })
+    return message
+  }
+
+  async function syncWrite<T>(fn: () => Promise<T>): Promise<T> {
+    beginWrite()
+    try {
+      const result = await withRetry(fn)
+      endWriteSuccess()
+      return result
+    } catch (err) {
+      endWriteFailure(err)
+      throw err
+    }
+  }
 
   function reportLacrmError(verb: string, err: unknown) {
     const message = err instanceof Error ? err.message : 'Something went wrong.'
@@ -324,12 +394,14 @@ export function useLacrmStore(): AppStore {
         dispatch({ type: 'HYDRATE_LEADS', leads })
         dispatch({ type: 'HYDRATE_CALL_LOGS', callLogs })
         setLoading(l => ({ ...l, leads: false }))
+        setSyncState(s => ({ ...s, status: s.pendingCount > 0 ? s.status : 'idle', lastSyncedAt: new Date().toISOString() }))
         announce(`${leads.length} ${leads.length === 1 ? 'lead' : 'leads'} loaded from LACRM.`)
       } catch (err) {
         if (cancelled) return
         const message = err instanceof Error ? err.message : 'Could not load leads from LACRM.'
         setError(e => ({ ...e, leads: message }))
         setLoading(l => ({ ...l, leads: false }))
+        setSyncState(s => ({ ...s, status: isOnline() ? 'error' : 'offline', lastError: message }))
         announce(`Error loading leads: ${message}`)
       }
     }
@@ -340,8 +412,10 @@ export function useLacrmStore(): AppStore {
   // Resolves a stage string to LACRM's canonical placement and, unless it's
   // one of the pre-qualification (no-pipeline) states, writes it through to
   // the contact's pipeline item — creating one if this is its first
-  // placement. Returns the label the app should display. Throws on network
-  // failure so callers can decide fatal-vs-not for their context.
+  // placement. Returns the label the app should display. Each API call goes
+  // through syncWrite() (retry/backoff — M1-T05); throws OfflineError or
+  // RetryExhaustedError on exhausted failure so callers can decide
+  // fatal-vs-not for their context.
   const syncStageToLacrm = useCallback(async (contactId: string, rawStage: string): Promise<string> => {
     const resolvedStage = displayStageName(rawStage)
     const pipeline = pipelineRef.current
@@ -352,9 +426,9 @@ export function useLacrmStore(): AppStore {
 
     const existingItemId = pipelineItemIdsRef.current.get(contactId)
     if (existingItemId) {
-      await editPipelineItem(existingItemId, statusId)
+      await syncWrite(() => editPipelineItem(existingItemId, statusId))
     } else {
-      const { PipelineItemId } = await createPipelineItem(contactId, pipeline.PipelineId, statusId)
+      const { PipelineItemId } = await syncWrite(() => createPipelineItem(contactId, pipeline.PipelineId, statusId))
       pipelineItemIdsRef.current.set(contactId, PipelineItemId)
     }
     return resolvedStage
@@ -364,15 +438,26 @@ export function useLacrmStore(): AppStore {
   // initial score/breakdown/status land in the same create call — see
   // applyScoring()) plus its pipeline placement if it carries a stage,
   // adding each locally as it succeeds so a mid-batch failure doesn't lose
-  // the earlier successes.
+  // the earlier successes. A lead whose create call fails (even after
+  // retries) is skipped rather than added with a fake id — LACRM wins:
+  // nothing appears "imported" that LACRM doesn't actually have.
   const importLeads = useCallback(async (leads: Lead[]) => {
+    let failures = 0
     for (const lead of leads) {
       const scored = applyScoring(lead, state.settings)
-      const { ContactId } = await createLacrmContact(leadToLacrmContactInput(scored))
+      let contactId: string
+      try {
+        const created = await syncWrite(() => createLacrmContact(leadToLacrmContactInput(scored)))
+        contactId = created.ContactId
+      } catch (err) {
+        failures += 1
+        reportLacrmError(`import ${lead.company || 'a lead'} to LACRM`, err)
+        continue
+      }
       let stage = scored.stage
       if (stage) {
         try {
-          stage = await syncStageToLacrm(ContactId, stage)
+          stage = await syncStageToLacrm(contactId, stage)
         } catch (err) {
           // The contact itself is safely created — a stage-placement hiccup
           // shouldn't lose the whole lead. Keep the display label, flag the error.
@@ -380,9 +465,12 @@ export function useLacrmStore(): AppStore {
           reportLacrmError(`place ${lead.company || 'a lead'} in the pipeline`, err)
         }
       }
-      dispatch({ type: 'ADD_LEAD', lead: { ...scored, id: ContactId, stage } })
+      dispatch({ type: 'ADD_LEAD', lead: { ...scored, id: contactId, stage } })
     }
-  }, [state.settings, syncStageToLacrm])
+    if (failures > 0) {
+      announce(`${failures} ${failures === 1 ? 'lead' : 'leads'} could not be saved to LACRM and ${failures === 1 ? 'was' : 'were'} not imported.`)
+    }
+  }, [state.settings, syncStageToLacrm, announce])
 
   const updateLead = useCallback(
     async (id: string, patch: Partial<Omit<Lead, 'id' | 'importedAt'>>) => {
@@ -398,8 +486,12 @@ export function useLacrmStore(): AppStore {
 
       if (touchesLacrmFields(patch) || patch.stage != null) {
         try {
-          await updateLacrmContact(id, leadToLacrmContactInput(merged))
+          await syncWrite(() => updateLacrmContact(id, leadToLacrmContactInput(merged)))
         } catch (err) {
+          // PRINCIPLE-01, "LACRM wins": the optimistic dispatch above never
+          // actually landed in LACRM, so it can't be left on screen as if it
+          // had — revert to the last LACRM-confirmed lead.
+          dispatch({ type: 'UPDATE_LEAD', id, patch: current })
           reportLacrmError(`save the change for ${current.company || 'a lead'} to LACRM`, err)
         }
       }
@@ -411,6 +503,7 @@ export function useLacrmStore(): AppStore {
             dispatch({ type: 'UPDATE_LEAD', id, patch: { stage: resolvedStage } })
           }
         } catch (err) {
+          dispatch({ type: 'UPDATE_LEAD', id, patch: { stage: current.stage } })
           reportLacrmError(`save the stage change for ${current.company || 'a lead'} to LACRM`, err)
         }
       }
@@ -430,7 +523,7 @@ export function useLacrmStore(): AppStore {
   // swallowing it, so LogCallDialog's error path actually fires instead of
   // silently pretending the call was logged.
   const addCallLog = useCallback(async (log: Omit<CallLog, 'id'>) => {
-    const { NoteId } = await createNote(log.leadId, callLogToNoteText(log), log.date)
+    const { NoteId } = await syncWrite(() => createNote(log.leadId, callLogToNoteText(log), log.date))
     dispatch({ type: 'ADD_CALL_LOG', log: { ...log, id: NoteId } })
   }, [])
 
@@ -446,12 +539,13 @@ export function useLacrmStore(): AppStore {
       settings: state.settings,
       loading,
       error,
+      syncState,
       importLeads,
       updateLead,
       deleteLead,
       addCallLog,
       updateSettings,
     }),
-    [state, loading, error, importLeads, updateLead, deleteLead, addCallLog, updateSettings]
+    [state, loading, error, syncState, importLeads, updateLead, deleteLead, addCallLog, updateSettings]
   )
 }

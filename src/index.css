@@ -1337,6 +1337,35 @@ circle.usa-map-pin { stroke: #ffffff; stroke-width: 1; }
   line-height: 1.5;
 }
 
+/* ── Sync status indicator (M1-T05) ──────────────────────────── */
+/* Text always carries the meaning; color/glyph are reinforcement only. */
+.sync-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.sync-status-glyph { font-size: 0.9375rem; line-height: 1; }
+
+.sync-status--idle    { background: #052e1a; color: #86efac; }
+.sync-status--syncing { background: #1e293b; color: #93c5fd; }
+.sync-status--syncing .sync-status-glyph { animation: sync-status-spin 1.1s linear infinite; }
+.sync-status--offline { background: #431407; color: #fdba74; }
+.sync-status--error   { background: #450a0a; color: #fca5a5; }
+
+@keyframes sync-status-spin {
+  to { transform: rotate(360deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sync-status--syncing .sync-status-glyph { animation: none; }
+}
+
 /* ── Help header button ──────────────────────────────────────── */
 .help-header-btn {
   flex-shrink: 0;

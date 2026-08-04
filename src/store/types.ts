@@ -125,6 +125,30 @@ export interface StoreError {
   settings: string | null
 }
 
+// ── Sync state (M1-T05) ──────────────────────────────────────────────────
+//
+// PRINCIPLE-01 ("LACRM wins"): a write SalesForge can't confirm happened
+// must never look identical to one that did. This is a single, global
+// picture of write-through health — not per-lead — surfaced in the UI so
+// Tim always knows whether his last action actually saved.
+//
+// 'offline'  — browser reports no network; writes fail fast, no retries spent.
+// 'syncing'  — at least one write is in flight or retrying.
+// 'error'    — the most recent write exhausted its retries; local state has
+//              been reverted to the last LACRM-confirmed value.
+// 'idle'     — nothing pending, last write (if any) succeeded.
+export type SyncStatus = 'idle' | 'syncing' | 'offline' | 'error'
+
+export interface SyncState {
+  status: SyncStatus
+  /** Writes currently in flight or retrying. */
+  pendingCount: number
+  /** Message from the most recent failed write, cleared on the next success. */
+  lastError: string | null
+  /** ISO 8601 date-time of the last write that succeeded, or hydrate completing. */
+  lastSyncedAt: string | null
+}
+
 export interface AppStore {
   // State
   leads: Lead[]
@@ -132,6 +156,7 @@ export interface AppStore {
   settings: Settings
   loading: StoreLoading
   error: StoreError
+  syncState: SyncState
 
   // Lead actions
   importLeads: (leads: Lead[]) => Promise<void>

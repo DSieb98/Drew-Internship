@@ -26,6 +26,7 @@ npm run dev          # Vite dev server at http://localhost:5173/
 npm run build        # Production build → dist/
 npm run preview      # Serve the dist/ build locally
 npm run typecheck    # tsc --noEmit (type check without build)
+npm run test         # vitest run (unit/integration tests — added M1-T05)
 npm install          # May need NODE_OPTIONS=--use-system-ca due to SSL cert issue
 ```
 
@@ -40,8 +41,12 @@ with `NODE_OPTIONS=--use-system-ca`. Add this to your shell profile or run it be
 fields) and call history (as LACRM Notes) through from LACRM on mount, and writes contact-field
 edits, stage changes, and logged calls back through the LACRM client. `pinned`/`pinnedNote`
 (Watchlist) and `Settings` stay local-only — the former is M1-T06's call, the latter isn't an
-LACRM concept. See `docs/specs/M1/M1-T02-async-store-swap.md`, `M1-T03-lead-stage-sync.md`, and
-`M1-T04-extended-state-sync.md`. All action methods are `async` (Promise-returning).
+LACRM concept. Every write goes through `syncWrite()`/`withRetry()` (`src/utils/retry.ts` —
+retry/backoff, offline fail-fast) and reverts the optimistic local edit if it's ultimately
+unconfirmed ("LACRM wins," PRINCIPLE-01); `AppStore.syncState` tracks global sync health, shown
+via `SyncStatusIndicator.tsx` in the header. See `docs/specs/M1/M1-T02-async-store-swap.md`,
+`M1-T03-lead-stage-sync.md`, `M1-T04-extended-state-sync.md`, and
+`M1-T05-conflict-resolution.md`. All action methods are `async` (Promise-returning).
 
 **Routing:** Hash-based (`#/`) — `HashRouter` renders `<Routes>` in `<main>`. All 8 sections
 are routes; Nurture and Reports are "coming later" honest placeholders in M0.
@@ -70,8 +75,8 @@ src/
     AppNav.tsx         — nav landmark + 8 NavItem links with aria-current
   pages/               — one file per section; 6 real, 2 "coming later" placeholders
   store/
-    types.ts           — Lead, CallLog, Settings, AppStore interface (async contract)
-    lacrmStore.ts      — M1 LACRM-backed implementation of AppStore (read/write-through)
+    types.ts           — Lead, CallLog, Settings, SyncState, AppStore interface (async contract)
+    lacrmStore.ts      — M1 LACRM-backed implementation of AppStore (read/write-through, retry/revert)
     StoreContext.tsx   — provider + useStore() hook
   hooks/
     useAnnounce.ts     — fire to the live region
@@ -79,6 +84,9 @@ src/
   components/
     LiveRegion.tsx     — polite aria-live region + AnnounceContext provider
     FocusTrapDialog.tsx — generic focus-trapped modal shell
+    SyncStatusIndicator.tsx — always-visible header badge for AppStore.syncState (M1-T05)
+  utils/
+    retry.ts           — withRetry()/isOnline() — retry/backoff + offline detection (M1-T05)
 docs/specs/            — project specifications (master plan + per-milestone files)
 worker/                — Cloudflare Worker credential proxy (D-21); separate deploy from the
                           static app, see worker/README.md
@@ -107,3 +115,4 @@ worker/                — Cloudflare Worker credential proxy (D-21); separate d
 | D-22 | Store swap: `useLacrmStore` replaces `useInMemoryStore` behind the unchanged `AppStore` contract. Only LACRM-mapped contact fields (name/company/email/phone/city/state/job title) read/write through today; stage/score/pin-state/call-history/settings stay local-only until T03/T04 wire their sync. `inMemoryStore.ts` deleted as dead code. See `docs/specs/M1/M1-T02-async-store-swap.md`. | M1-T02 |
 | D-23 | Pipeline stage sync: `Lead.stage` reads/writes through to LACRM's confirmed sales pipeline via `Pipeline_Items` API functions (`CreatePipelineItem`/`EditPipelineItem`/`GetPipelineItems`, verified against LACRM's real public v2 docs, not guessed). Which of the account's pipelines is "the" sales pipeline is picked by name-overlap against the B-01 confirmed stage list (`selectSalesPipeline()`), since no pipeline *name* was ever confirmed. Added a stage `<select>` to `LeadDrawer` — the only in-app trigger for a stage change — since no prior spec had planned one and T03's acceptance criteria requires the write path to be exercisable. See `docs/specs/M1/M1-T03-lead-stage-sync.md`. | M1-T03 |
 | D-24 | Extended-state sync scope, resolved against three conflicts between the T04 spec and the actual codebase (asked Drew rather than guessed, same as B-01): **(1) Nurture** — NurturePage is still M0's placeholder (no touch/approval engine exists), so there's nothing real to sync; B-03 stays open and is deferred to M2, which already scopes building the engine and closing B-03 together. **(2) "Lead notes"** — treated as redundant with call-log notes (already in scope under call history); no new generic Lead.notes field or UI was added. **(3) dealValue** — added to this sync pass (not in T04's literal in-scope list) because the hot-alert acceptance criterion ("consistent across devices/sessions") is unmet without it — the alert filters on dealValue ≥ threshold. Mechanics: score/statusOverride/employees/annualRevenue/industry/dealValue sync as LACRM Contact custom fields (`"SalesForge …"`, bootstrap-created via `CreateCustomField` if absent — `ensureSalesforgeCustomFields()`); call history syncs as one LACRM Note per call (marker-prefixed so other LACRM notes aren't misread as call logs), with `CallLog.id` becoming the real `NoteId` and `Lead.called`/`lastContactDate` derived from call-log dates instead of their own field (so "Mark as called" is now a minimal call log, not a separate patch). Score is *stored*, not purely recomputed on read, because pinnedNote (a scoring input, S-05..S-08) has no LACRM home until T06 — recomputing on every hydrate would silently drop those points each session; local edits still recompute live and push the fresh value back. Hot-alert status and nurture custom fields from the original T01 mapping-doc plan were dropped as unnecessary/out of scope respectively. See `docs/specs/M1/M1-T04-extended-state-sync.md`. | M1-T04 |
+| D-25 | Conflict resolution / "LACRM wins" enforcement: fixed a real bug where `updateLead()` dispatched its patch optimistically but never reverted it on write failure — LACRM's actual (unchanged) state didn't win, the stale local edit did. Now every LACRM write goes through a `syncWrite()`/`withRetry()` helper (`src/utils/retry.ts`: 4 attempts, exponential backoff 500ms→8000ms, offline checked before every attempt and fails fast with no retries spent) and, on exhausted failure, `updateLead`/stage edits revert to the last LACRM-confirmed lead snapshot; `importLeads` skips (never fake-adds) a lead whose create call fails. A global `syncState` (`'idle'\|'syncing'\|'offline'\|'error'`, added to `AppStore`) drives a small always-visible header badge (`SyncStatusIndicator.tsx`, text+icon, not a second aria-live region — transitions are already announced once via the existing live-region pattern) and updates instantly on browser `online`/`offline` events, not just on the next failed write. Added `vitest`/`@testing-library/react` (this project's first test runner) with `src/utils/retry.test.ts` and `src/store/lacrmStore.test.ts` proving revert-on-failure, offline fail-fast, and recovery-within-budget against the real hook. See `docs/specs/M1/M1-T05-conflict-resolution.md`. | M1-T05 |

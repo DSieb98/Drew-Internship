@@ -60,8 +60,9 @@ export default function LogCallDialog({ open, onClose, lead }: LogCallDialogProp
       announce(`Call logged for ${lead.company}. Outcome: ${outcome}.`)
       reset()
       onClose()
-    } catch {
-      setError('Something went wrong logging this call. Please try again.')
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Something went wrong logging this call. Please try again.'
+      setError(msg)
       setBusy(false)
     }
   }

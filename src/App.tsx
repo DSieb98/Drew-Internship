@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Routes, Route, useLocation } from 'react-router-dom'
 import AppNav from './nav/AppNav'
 import AskAiDialog from './components/AskAiDialog'
+import SyncStatusIndicator from './components/SyncStatusIndicator'
 import { useAnnounce } from './hooks/useAnnounce'
 import { useHelp } from './hooks/useHelp'
 import TodayPage from './pages/TodayPage'
@@ -56,6 +57,7 @@ export default function App() {
       </a>
       <header className="app-header">
         <h1 className="app-title">SalesForge</h1>
+        <SyncStatusIndicator />
         <div className="app-header-actions">
           <button type="button" className="help-header-btn" onClick={() => setAskAiOpen(true)}>
             Ask AI assistant
