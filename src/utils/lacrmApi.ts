@@ -1,13 +1,13 @@
 /**
- * LACRM API client (M1-T01) via the credential proxy Worker (M1-T00).
- * Talks to LACRM's v2 API (Contacts + Pipelines) through the Worker so the
- * real API key never reaches the browser. See worker/README.md and
- * docs/specs/M1/M1-T01-lacrm-client-mapping.md.
+ * LACRM API client (M1-T01/T03) via the credential proxy Worker (M1-T00).
+ * Talks to LACRM's v2 API (Contacts, Pipelines, Pipeline Items) through the
+ * Worker so the real API key never reaches the browser. See worker/README.md,
+ * docs/specs/M1/M1-T01-lacrm-client-mapping.md, and M1-T03-lead-stage-sync.md.
  *
- * Only read+write for contacts and read for pipelines is implemented here —
- * that's T01's scope. Pipeline-item (stage) writes, notes, and custom fields
- * (score/hot-alert/nurture) are mapped in lacrmMapping.ts but wired up by
- * T03/T04, which own the actual sync logic.
+ * Read+write for contacts, read for pipelines, and read+write for pipeline
+ * items (a contact's placement + status within a pipeline — T03's stage
+ * sync) are implemented here. Notes and custom fields (score/hot-alert/
+ * nurture) are mapped in lacrmMapping.ts but wired up by T04.
  */
 
 const WORKER_URL = import.meta.env.VITE_WORKER_URL
@@ -90,6 +90,18 @@ export interface LacrmPipeline {
   Statuses: LacrmPipelineStatus[]
 }
 
+export interface LacrmPipelineItem {
+  PipelineItemId: string
+  PipelineId: string
+  StatusId: string
+  ContactId: string
+}
+
+export interface LacrmPipelineItemSearchResult {
+  HasMoreResults: boolean
+  Results: LacrmPipelineItem[]
+}
+
 // ── Connectivity ─────────────────────────────────────────────────────────
 
 export async function pingLacrm(): Promise<{ ok: boolean; message: string }> {
@@ -105,9 +117,24 @@ export async function pingLacrm(): Promise<{ ok: boolean; message: string }> {
 
 // ── Contacts (leads) ─────────────────────────────────────────────────────
 
-export async function searchLacrmContacts(term: string): Promise<LacrmContact[]> {
-  const result = await request<LacrmContactSearchResult>(`/api/lacrm/contacts?search=${encodeURIComponent(term)}`)
-  return result.Results
+export async function searchLacrmContacts(term: string, page = 1): Promise<LacrmContactSearchResult> {
+  return request<LacrmContactSearchResult>(
+    `/api/lacrm/contacts?search=${encodeURIComponent(term)}&page=${page}`
+  )
+}
+
+/** Pages through GetContacts until HasMoreResults is false. Used for the read-through hydrate — a
+ *  single search() call only returns one page (up to 500 results by default). */
+export async function getAllLacrmContacts(term = ''): Promise<LacrmContact[]> {
+  const all: LacrmContact[] = []
+  let page = 1
+  while (true) {
+    const result = await searchLacrmContacts(term, page)
+    all.push(...result.Results)
+    if (!result.HasMoreResults) break
+    page += 1
+  }
+  return all
 }
 
 export async function getLacrmContact(contactId: string): Promise<LacrmContact> {
@@ -132,4 +159,43 @@ export async function updateLacrmContact(contactId: string, input: Partial<Lacrm
 
 export async function getLacrmPipelines(): Promise<LacrmPipeline[]> {
   return request<LacrmPipeline[]>('/api/lacrm/pipelines')
+}
+
+// ── Pipeline items (a contact's placement + status within a pipeline) ────
+
+async function getPipelineItemsPage(pipelineId: string, page: number): Promise<LacrmPipelineItemSearchResult> {
+  return request<LacrmPipelineItemSearchResult>(
+    `/api/lacrm/pipeline-items?pipelineId=${encodeURIComponent(pipelineId)}&page=${page}`
+  )
+}
+
+/** Pages through GetPipelineItems for one pipeline until HasMoreResults is false. */
+export async function getAllPipelineItems(pipelineId: string): Promise<LacrmPipelineItem[]> {
+  const all: LacrmPipelineItem[] = []
+  let page = 1
+  while (true) {
+    const result = await getPipelineItemsPage(pipelineId, page)
+    all.push(...result.Results)
+    if (!result.HasMoreResults) break
+    page += 1
+  }
+  return all
+}
+
+export async function createPipelineItem(
+  contactId: string,
+  pipelineId: string,
+  statusId: string
+): Promise<{ PipelineItemId: string }> {
+  return request<{ PipelineItemId: string }>('/api/lacrm/pipeline-items', {
+    method: 'POST',
+    body: JSON.stringify({ ContactId: contactId, PipelineId: pipelineId, StatusId: statusId }),
+  })
+}
+
+export async function editPipelineItem(pipelineItemId: string, statusId: string): Promise<void> {
+  await request<Record<string, never>>(`/api/lacrm/pipeline-items/${encodeURIComponent(pipelineItemId)}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ StatusId: statusId }),
+  })
 }

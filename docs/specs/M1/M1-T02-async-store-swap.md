@@ -77,12 +77,11 @@ on `store.loading.leads` / `store.error.leads` in their empty-state instead of a
 announced via `useAnnounce()` from inside the store hook itself (fires once, on hydrate
 success/failure), satisfying PRINCIPLE-03's "no silent spinners."
 
-**Known gap, flagged not guessed:** `searchLacrmContacts('')` only reads one page of
-`GetContacts` — `LacrmContactSearchResult.HasMoreResults` exists but nothing pages through it.
-Left unresolved because there are still no live LACRM credentials to confirm the real page size
-or pagination parameter name (same blocker T01 hit) — guessing the parameter risks silently
-dropping contacts past page 1, which is worse than the current honest "not yet handled." Needs a
-live smoke test before this is trusted for an account with a large contact list.
+**Known gap, flagged not guessed (resolved in T03):** at the time this task was built,
+`searchLacrmContacts('')` only read one page of `GetContacts` — pagination was left unhandled
+rather than guessed, since there were no live LACRM credentials to confirm the real parameter
+names. T03 fetched LACRM's actual public API docs and confirmed `Page`/`MaxNumberOfResults`;
+`getAllLacrmContacts()` in `lacrmApi.ts` now pages through fully. See M1-T03's own writeup.
 
 **Not verified against a live account**, same caveat as T01 — no LACRM credentials pulled yet.
 `npm run typecheck` and `npm run build` both pass; the unconfigured-`VITE_WORKER_URL` path was

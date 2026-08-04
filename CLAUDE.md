@@ -35,10 +35,11 @@ with `NODE_OPTIONS=--use-system-ca`. Add this to your shell profile or run it be
 ## Architecture
 
 **State:** `src/store/` — `AppStore` interface + `StoreContext` provider. `useLacrmStore`
-(M1-T02) is the live implementation: reads leads through from LACRM on mount and writes
-contact-field edits back through T01's client; fields LACRM doesn't hold yet (stage, dealValue,
-score, pin state, call history, settings) stay local-only until T03/T04 wire their sync — see
-`docs/specs/M1/M1-T02-async-store-swap.md`. All action methods are `async` (Promise-returning).
+(M1-T02/T03) is the live implementation: reads leads + pipeline stage through from LACRM on
+mount and writes contact-field edits and stage changes back through the LACRM client. Fields
+with no LACRM home yet (dealValue, score, pin state, call history, settings) stay local-only
+until T04 wires their sync — see `docs/specs/M1/M1-T02-async-store-swap.md` and
+`M1-T03-lead-stage-sync.md`. All action methods are `async` (Promise-returning).
 
 **Routing:** Hash-based (`#/`) — `HashRouter` renders `<Routes>` in `<main>`. All 8 sections
 are routes; Nurture and Reports are "coming later" honest placeholders in M0.
@@ -102,3 +103,4 @@ worker/                — Cloudflare Worker credential proxy (D-21); separate d
 | D-20 | Lead import uses SheetJS (xlsx, Apache 2.0) parsed entirely client-side; no lead data leaves the browser | M0-T02 |
 | D-21 | Credential architecture: a Cloudflare Worker (`worker/`) holds the LACRM + Anthropic API keys server-side and exposes two purpose-built endpoints (`/api/anthropic/chat`, `/api/lacrm/ping`); the app calls the Worker, never the upstream APIs directly. First exception to "browser-only, no server" — GitHub Pages deploy (D-17) is unchanged, the Worker is a separate deploy. Free tier ($0 at this traffic scale). See `docs/specs/M1/M1-T00-credential-architecture.md` and `worker/README.md`. | M1-T00 |
 | D-22 | Store swap: `useLacrmStore` replaces `useInMemoryStore` behind the unchanged `AppStore` contract. Only LACRM-mapped contact fields (name/company/email/phone/city/state/job title) read/write through today; stage/score/pin-state/call-history/settings stay local-only until T03/T04 wire their sync. `inMemoryStore.ts` deleted as dead code. See `docs/specs/M1/M1-T02-async-store-swap.md`. | M1-T02 |
+| D-23 | Pipeline stage sync: `Lead.stage` reads/writes through to LACRM's confirmed sales pipeline via `Pipeline_Items` API functions (`CreatePipelineItem`/`EditPipelineItem`/`GetPipelineItems`, verified against LACRM's real public v2 docs, not guessed). Which of the account's pipelines is "the" sales pipeline is picked by name-overlap against the B-01 confirmed stage list (`selectSalesPipeline()`), since no pipeline *name* was ever confirmed. Added a stage `<select>` to `LeadDrawer` — the only in-app trigger for a stage change — since no prior spec had planned one and T03's acceptance criteria requires the write path to be exercisable. See `docs/specs/M1/M1-T03-lead-stage-sync.md`. | M1-T03 |

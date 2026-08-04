@@ -156,7 +156,14 @@ export default {
 
     if (pathname === '/api/lacrm/contacts' && method === 'GET') {
       const search = url.searchParams.get('search') ?? ''
-      return lacrmRoute('GetContacts', { SearchTerms: search, RecordTypeFilter: 'Contacts' }, env, origin)
+      const page = Number(url.searchParams.get('page') ?? '1')
+      const maxResults = Number(url.searchParams.get('maxResults') ?? '500')
+      return lacrmRoute(
+        'GetContacts',
+        { SearchTerms: search, RecordTypeFilter: 'Contacts', Page: page, MaxNumberOfResults: maxResults },
+        env,
+        origin
+      )
     }
 
     if (pathname === '/api/lacrm/contacts' && method === 'POST') {
@@ -175,6 +182,30 @@ export default {
 
     if (pathname === '/api/lacrm/pipelines' && method === 'GET') {
       return lacrmRoute('GetPipelines', {}, env, origin)
+    }
+
+    if (pathname === '/api/lacrm/pipeline-items' && method === 'GET') {
+      const pipelineId = url.searchParams.get('pipelineId') ?? ''
+      const page = Number(url.searchParams.get('page') ?? '1')
+      const maxResults = Number(url.searchParams.get('maxResults') ?? '500')
+      if (!pipelineId) return json({ error: 'Missing "pipelineId".' }, 400, origin)
+      return lacrmRoute(
+        'GetPipelineItems',
+        { PipelineId: pipelineId, Page: page, MaxNumberOfResults: maxResults },
+        env,
+        origin
+      )
+    }
+
+    if (pathname === '/api/lacrm/pipeline-items' && method === 'POST') {
+      const body = await req.json().catch(() => ({})) as Record<string, unknown>
+      return lacrmRoute('CreatePipelineItem', body, env, origin)
+    }
+
+    const pipelineItemMatch = pathname.match(/^\/api\/lacrm\/pipeline-items\/([^/]+)$/)
+    if (pipelineItemMatch && method === 'PATCH') {
+      const body = await req.json().catch(() => ({})) as Record<string, unknown>
+      return lacrmRoute('EditPipelineItem', { PipelineItemId: pipelineItemMatch[1], ...body }, env, origin)
     }
 
     return json({ error: 'Not found.' }, 404, origin)

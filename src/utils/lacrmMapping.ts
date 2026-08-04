@@ -1,12 +1,12 @@
 /**
- * SalesForge Lead ↔ LACRM field mapping (M1-T01).
- * Full category-by-category decision writeup: docs/specs/M1/M1-T01-lacrm-client-mapping.md.
+ * SalesForge Lead ↔ LACRM field mapping (M1-T01, extended in M1-T03).
+ * Full category-by-category decision writeup: docs/specs/M1/M1-T01-lacrm-client-mapping.md
+ * and M1-T03-lead-stage-sync.md.
  *
- * This module covers what T01 owns: Contact field mapping and pipeline
- * stage-name reconciliation. Nurture state, scores, hot-alert status, call
- * history, and notes are *documented* here (as constants/comments) but their
- * sync logic is T04's job — T01 only proves the credential + client
- * mechanism and defines where each category will live in LACRM.
+ * This module covers Contact field mapping and pipeline stage-name
+ * reconciliation, both wired end-to-end (T03). Nurture state, scores,
+ * hot-alert status, call history, and notes are *documented* here (as
+ * constants/comments) but their sync logic is T04's job.
  */
 
 import type { Lead } from '../store/types'
@@ -87,6 +87,53 @@ export function resolveStageStatusId(stageName: string | null, pipeline: LacrmPi
   if (!stageName) return null
   const match = pipeline.Statuses.find(s => s.Name.toLowerCase() === stageName.toLowerCase())
   return match?.StatusId ?? null
+}
+
+/** Migrates a possibly-legacy stage string to the label the app should *display* — unlike
+ *  canonicalStageName(), this never collapses to null: New Lead / Contacted keep their own label
+ *  (they're just not placed in the LACRM pipeline), everything else moves to its confirmed name. */
+export function displayStageName(stage: string): string {
+  return canonicalStageName(stage) ?? stage
+}
+
+// ── Confirmed pipeline (B-01, resolved 2026-08-04 — see M2-pipeline-nurture-persistence.md) ──
+
+/** The real LACRM pipeline stages, in flow order — everything after the app-only pre-qualification pair. */
+export const CONFIRMED_LACRM_STAGES = [
+  'Qualified',
+  'Discovery Call',
+  'Needs Analysis',
+  'Sample Box Sent',
+  'Quote',
+  'First Order',
+  'Long-term Relationship',
+] as const
+
+/** Full stage list a user can pick from in the app, pre-qualification states included. */
+export const SELECTABLE_STAGES = ['New Lead', 'Contacted', ...CONFIRMED_LACRM_STAGES] as const
+
+/** Reverse of resolveStageStatusId — the live stage name for a StatusId, or null if not found (e.g. a status that's been deleted/renamed in LACRM since last sync). */
+export function statusIdToStageName(statusId: string, pipeline: LacrmPipeline): string | null {
+  return pipeline.Statuses.find(s => s.StatusId === statusId)?.Name ?? null
+}
+
+/** Picks which of the account's pipelines is "the" sales pipeline B-01 confirmed, by counting
+ *  case-insensitive name overlap against CONFIRMED_LACRM_STAGES. Doesn't guess a pipeline *name*
+ *  (never confirmed) — most accounts have exactly one pipeline, so this degrades to "the only one"
+ *  in the common case, and picks the best-overlapping one if there happen to be several. Returns
+ *  null (not a guess) if no pipeline has any matching status name at all. */
+export function selectSalesPipeline(pipelines: LacrmPipeline[]): LacrmPipeline | null {
+  const confirmed = new Set(CONFIRMED_LACRM_STAGES.map(s => s.toLowerCase()))
+  let best: LacrmPipeline | null = null
+  let bestScore = 0
+  for (const pipeline of pipelines) {
+    const score = pipeline.Statuses.filter(s => confirmed.has(s.Name.toLowerCase())).length
+    if (score > bestScore) {
+      best = pipeline
+      bestScore = score
+    }
+  }
+  return best
 }
 
 // ── Deferred categories (documented target, not yet wired — T04) ───────

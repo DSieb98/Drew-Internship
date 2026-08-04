@@ -1,17 +1,16 @@
 /**
- * M1-T02 — LACRM-backed AppStore implementation.
+ * M1-T02/T03 — LACRM-backed AppStore implementation.
  *
  * Fulfils the same async AppStore contract as M0's useInMemoryStore, so no
- * consuming component changes. Leads read-through from LACRM on mount and
- * write-through on create/edit for the fields T01 has mapped so far
- * (contact/company/email/phone/city/state/job title — see lacrmMapping.ts).
+ * consuming component changes. Leads and pipeline stage read-through from
+ * LACRM on mount and write-through on create/edit, for the fields T01/T03
+ * have mapped so far (contact fields — see lacrmMapping.ts — plus pipeline
+ * stage placement).
  *
- * Fields not yet given a LACRM home — stage, dealValue, score, pinned state,
- * call history, settings — stay in local component state for this session,
- * same as M0. That's not an oversight: T01's mapping doc explicitly defers
- * those categories (custom fields + notes) to T04 "extended-state sync".
- * This task only delivers the swapped store shell + contract (see
- * docs/specs/M1/M1-T02-async-store-swap.md "Out of scope").
+ * Fields not yet given a LACRM home — dealValue, score, pinned state, call
+ * history, settings — stay in local component state for this session, same
+ * as M0. That's not an oversight: T01's mapping doc explicitly defers those
+ * categories (custom fields + notes) to T04 "extended-state sync".
  */
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react'
 import {
@@ -26,12 +25,25 @@ import {
 import { scoreLead, deriveStatus } from '../scoring/scoreLead'
 import { useAnnounce } from '../hooks/useAnnounce'
 import {
-  searchLacrmContacts,
+  getAllLacrmContacts,
   createLacrmContact,
   updateLacrmContact,
+  getLacrmPipelines,
+  getAllPipelineItems,
+  createPipelineItem,
+  editPipelineItem,
   LacrmContact,
+  LacrmPipeline,
 } from '../utils/lacrmApi'
-import { leadToLacrmContactInput, lacrmContactToLeadPatch } from '../utils/lacrmMapping'
+import {
+  leadToLacrmContactInput,
+  lacrmContactToLeadPatch,
+  canonicalStageName,
+  displayStageName,
+  resolveStageStatusId,
+  statusIdToStageName,
+  selectSalesPipeline,
+} from '../utils/lacrmMapping'
 
 const DEFAULT_SETTINGS: Settings = {
   hotScoreThreshold: 75,
@@ -79,7 +91,8 @@ function applyScoring(lead: Lead, settings: Settings): Lead {
 }
 
 // Fills in the fields LACRM doesn't hold yet with M0-equivalent defaults —
-// same shape rowToLead() uses for a freshly-imported lead.
+// same shape rowToLead() uses for a freshly-imported lead. `stage` is filled
+// in separately by the caller once pipeline items are known.
 function contactToLead(contact: LacrmContact): Lead {
   const patch = lacrmContactToLeadPatch(contact)
   return {
@@ -175,7 +188,20 @@ export function useLacrmStore(): AppStore {
   const announce = useAnnounce()
   const hydratedRef = useRef(false)
 
-  // Read-through: populate leads from LACRM once on mount.
+  // The confirmed sales pipeline (B-01) and each contact's current
+  // PipelineItemId, once known — populated by hydrate(), consulted and
+  // updated by stage writes. Ref, not state: this is sync bookkeeping the
+  // UI never reads directly (Lead.stage is what's rendered).
+  const pipelineRef = useRef<LacrmPipeline | null>(null)
+  const pipelineItemIdsRef = useRef<Map<string, string>>(new Map())
+
+  function reportLacrmError(verb: string, err: unknown) {
+    const message = err instanceof Error ? err.message : 'Something went wrong.'
+    setError(e => ({ ...e, leads: message }))
+    announce(`Error trying to ${verb}: ${message}`)
+  }
+
+  // Read-through: populate leads + pipeline stage from LACRM once on mount.
   useEffect(() => {
     if (hydratedRef.current) return
     hydratedRef.current = true
@@ -183,15 +209,36 @@ export function useLacrmStore(): AppStore {
 
     async function hydrate() {
       try {
-        // KNOWN GAP: searchLacrmContacts('') returns one page of GetContacts
-        // (LacrmContactSearchResult.HasMoreResults exists but nothing here
-        // pages through it yet). Unverified against a live account per
-        // T01 — no LACRM credentials exist to confirm the real page size or
-        // the pagination parameter name. Flag to Drew before relying on this
-        // for an account with more contacts than one page holds.
-        const contacts = await searchLacrmContacts('')
+        const [contacts, pipelines] = await Promise.all([
+          getAllLacrmContacts(),
+          getLacrmPipelines(),
+        ])
         if (cancelled) return
-        const leads = contacts.filter(c => !c.IsCompany).map(contactToLead)
+
+        const salesPipeline = selectSalesPipeline(pipelines)
+        pipelineRef.current = salesPipeline
+
+        const itemsByContactId = new Map<string, { statusId: string; pipelineItemId: string }>()
+        if (salesPipeline) {
+          const items = await getAllPipelineItems(salesPipeline.PipelineId)
+          if (cancelled) return
+          for (const item of items) {
+            itemsByContactId.set(item.ContactId, { statusId: item.StatusId, pipelineItemId: item.PipelineItemId })
+            pipelineItemIdsRef.current.set(item.ContactId, item.PipelineItemId)
+          }
+        }
+
+        const leads = contacts
+          .filter(c => !c.IsCompany)
+          .map(contact => {
+            const lead = contactToLead(contact)
+            const placement = itemsByContactId.get(contact.ContactId)
+            if (placement && salesPipeline) {
+              lead.stage = statusIdToStageName(placement.statusId, salesPipeline) ?? ''
+            }
+            return lead
+          })
+
         dispatch({ type: 'HYDRATE_LEADS', leads })
         setLoading(l => ({ ...l, leads: false }))
         announce(`${leads.length} ${leads.length === 1 ? 'lead' : 'leads'} loaded from LACRM.`)
@@ -207,31 +254,76 @@ export function useLacrmStore(): AppStore {
     return () => { cancelled = true }
   }, [announce])
 
-  // Write-through: create a LACRM contact per lead, adding each locally as
-  // it succeeds so a mid-batch failure doesn't lose the earlier successes.
+  // Resolves a stage string to LACRM's canonical placement and, unless it's
+  // one of the pre-qualification (no-pipeline) states, writes it through to
+  // the contact's pipeline item — creating one if this is its first
+  // placement. Returns the label the app should display. Throws on network
+  // failure so callers can decide fatal-vs-not for their context.
+  const syncStageToLacrm = useCallback(async (contactId: string, rawStage: string): Promise<string> => {
+    const resolvedStage = displayStageName(rawStage)
+    const pipeline = pipelineRef.current
+    if (!pipeline) return resolvedStage // pipeline unknown (hydrate failed/pending) — can't place yet
+
+    const statusId = resolveStageStatusId(canonicalStageName(rawStage), pipeline)
+    if (!statusId) return resolvedStage // pre-qualification state — no pipeline placement
+
+    const existingItemId = pipelineItemIdsRef.current.get(contactId)
+    if (existingItemId) {
+      await editPipelineItem(existingItemId, statusId)
+    } else {
+      const { PipelineItemId } = await createPipelineItem(contactId, pipeline.PipelineId, statusId)
+      pipelineItemIdsRef.current.set(contactId, PipelineItemId)
+    }
+    return resolvedStage
+  }, [])
+
+  // Write-through: create a LACRM contact per lead (plus its pipeline
+  // placement if it carries a stage), adding each locally as it succeeds so
+  // a mid-batch failure doesn't lose the earlier successes.
   const importLeads = useCallback(async (leads: Lead[]) => {
     for (const lead of leads) {
       const { ContactId } = await createLacrmContact(leadToLacrmContactInput(lead))
-      dispatch({ type: 'ADD_LEAD', lead: { ...lead, id: ContactId } })
+      let stage = lead.stage
+      if (stage) {
+        try {
+          stage = await syncStageToLacrm(ContactId, stage)
+        } catch (err) {
+          // The contact itself is safely created — a stage-placement hiccup
+          // shouldn't lose the whole lead. Keep the display label, flag the error.
+          stage = displayStageName(stage)
+          reportLacrmError(`place ${lead.company || 'a lead'} in the pipeline`, err)
+        }
+      }
+      dispatch({ type: 'ADD_LEAD', lead: { ...lead, id: ContactId, stage } })
     }
-  }, [])
+  }, [syncStageToLacrm])
 
   const updateLead = useCallback(
     async (id: string, patch: Partial<Omit<Lead, 'id' | 'importedAt'>>) => {
       dispatch({ type: 'UPDATE_LEAD', id, patch })
-
-      if (!touchesLacrmFields(patch)) return
       const current = state.leads.find(l => l.id === id)
       if (!current) return
-      try {
-        await updateLacrmContact(id, leadToLacrmContactInput({ ...current, ...patch }))
-      } catch (err) {
-        const message = err instanceof Error ? err.message : 'Could not save the change to LACRM.'
-        setError(e => ({ ...e, leads: message }))
-        announce(`Error saving to LACRM: ${message}`)
+
+      if (touchesLacrmFields(patch)) {
+        try {
+          await updateLacrmContact(id, leadToLacrmContactInput({ ...current, ...patch }))
+        } catch (err) {
+          reportLacrmError(`save the change for ${current.company || 'a lead'} to LACRM`, err)
+        }
+      }
+
+      if (patch.stage != null && patch.stage !== current.stage) {
+        try {
+          const resolvedStage = await syncStageToLacrm(id, patch.stage)
+          if (resolvedStage !== patch.stage) {
+            dispatch({ type: 'UPDATE_LEAD', id, patch: { stage: resolvedStage } })
+          }
+        } catch (err) {
+          reportLacrmError(`save the stage change for ${current.company || 'a lead'} to LACRM`, err)
+        }
       }
     },
-    [state.leads, announce]
+    [state.leads, syncStageToLacrm]
   )
 
   // No LACRM delete operation exists yet (T01's client only implements

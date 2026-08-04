@@ -5,6 +5,7 @@ import ExplainTerm from './ExplainTerm'
 import { useStore } from '../store/StoreContext'
 import { useAnnounce } from '../hooks/useAnnounce'
 import { askClaude } from '../utils/claudeApi'
+import { SELECTABLE_STAGES } from '../utils/lacrmMapping'
 import type { Lead, Settings } from '../store/types'
 
 type TabId = 'briefing' | 'opener' | 'next-steps' | 'email'
@@ -48,6 +49,13 @@ export default function LeadDrawer({ lead, onClose, settings }: LeadDrawerProps)
     const date = new Date().toISOString().split('T')[0]
     store.updateLead(lead.id, { called: true, lastContactDate: date })
     announce(`${lead.company} marked as called.`)
+  }
+
+  function handleStageChange(e: React.ChangeEvent<HTMLSelectElement>) {
+    if (!lead) return
+    const stage = e.target.value
+    store.updateLead(lead.id, { stage })
+    announce(`${lead.company} moved to ${stage}.`)
   }
 
   const switchTab = useCallback((idx: number) => {
@@ -210,12 +218,20 @@ export default function LeadDrawer({ lead, onClose, settings }: LeadDrawerProps)
                 </dd>
               </>
             )}
-            {lead.stage && (
-              <>
-                <dt>Stage</dt>
-                <dd>{lead.stage}</dd>
-              </>
-            )}
+            <dt><label htmlFor="drawer-stage-select">Stage</label></dt>
+            <dd>
+              <select
+                id="drawer-stage-select"
+                className="drawer-stage-select"
+                value={lead.stage}
+                onChange={handleStageChange}
+              >
+                {!lead.stage && <option value="">— Select stage —</option>}
+                {SELECTABLE_STAGES.map(s => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
+            </dd>
             {lead.industry && (
               <>
                 <dt>Industry</dt>
