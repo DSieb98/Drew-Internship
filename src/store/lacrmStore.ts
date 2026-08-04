@@ -1,16 +1,22 @@
 /**
- * M1-T02/T03 — LACRM-backed AppStore implementation.
+ * M1-T02/T03/T04 — LACRM-backed AppStore implementation.
  *
  * Fulfils the same async AppStore contract as M0's useInMemoryStore, so no
- * consuming component changes. Leads and pipeline stage read-through from
- * LACRM on mount and write-through on create/edit, for the fields T01/T03
- * have mapped so far (contact fields — see lacrmMapping.ts — plus pipeline
- * stage placement).
+ * consuming component changes. Leads, pipeline stage, scoring inputs
+ * (score/statusOverride/employees/annualRevenue/industry/dealValue — as
+ * custom fields, T04) and call history (as Notes, T04) all read-through
+ * from LACRM on mount and write-through on create/edit.
  *
- * Fields not yet given a LACRM home — dealValue, score, pinned state, call
- * history, settings — stay in local component state for this session, same
- * as M0. That's not an oversight: T01's mapping doc explicitly defers those
- * categories (custom fields + notes) to T04 "extended-state sync".
+ * `pinned`/`pinnedNote` (Watchlist) and `Settings` stay local-only — the
+ * former is M1-T06's call to make, the latter isn't an LACRM concept.
+ *
+ * Score persistence (D-24): the score total and its per-criterion breakdown
+ * are *stored* (not purely recomputed on read) so a reload restores the
+ * exact last-known-accurate value. That matters because one scoring input —
+ * pinnedNote (S-05/06/07/08) — has no LACRM home until T06, so a naive
+ * recompute-on-hydrate would silently drop those points every session. Local
+ * edits still recompute live via applyScoring() and push the fresh result
+ * back to LACRM, same as M0 — only the *read* path trusts the stored value.
  */
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react'
 import {
@@ -32,6 +38,10 @@ import {
   getAllPipelineItems,
   createPipelineItem,
   editPipelineItem,
+  getCustomFields,
+  createCustomField,
+  getAllNotes,
+  createNote,
   LacrmContact,
   LacrmPipeline,
 } from '../utils/lacrmApi'
@@ -43,6 +53,9 @@ import {
   resolveStageStatusId,
   statusIdToStageName,
   selectSalesPipeline,
+  SALESFORGE_CUSTOM_FIELDS,
+  callLogToNoteText,
+  noteToCallLog,
 } from '../utils/lacrmMapping'
 
 const DEFAULT_SETTINGS: Settings = {
@@ -71,9 +84,14 @@ const DEFAULT_SETTINGS: Settings = {
   recentActivityDays: 7,
 }
 
-// Fields LACRM's Contact record can currently hold (T01's mapped subset).
-// A patch touching any of these needs a write-through EditContact call.
-const LACRM_MAPPED_FIELDS = ['contactName', 'company', 'email', 'phone', 'city', 'state', 'jobTitle'] as const
+// Fields LACRM's Contact record can hold, natively (T01) or as a T04 custom
+// field. A patch touching any of these needs a write-through EditContact
+// call. `stage` is deliberately excluded — it's handled separately via the
+// pipeline-items API (syncStageToLacrm), not a Contact field.
+const LACRM_MAPPED_FIELDS = [
+  'contactName', 'company', 'email', 'phone', 'city', 'state', 'jobTitle',
+  'employees', 'annualRevenue', 'industry', 'dealValue', 'statusOverride',
+] as const
 
 function touchesLacrmFields(patch: Partial<Lead>): boolean {
   return LACRM_MAPPED_FIELDS.some(f => f in patch)
@@ -90,11 +108,16 @@ function applyScoring(lead: Lead, settings: Settings): Lead {
   }
 }
 
-// Fills in the fields LACRM doesn't hold yet with M0-equivalent defaults —
-// same shape rowToLead() uses for a freshly-imported lead. `stage` is filled
-// in separately by the caller once pipeline items are known.
-function contactToLead(contact: LacrmContact): Lead {
+// Fills in `stage` (filled in separately once pipeline items are known) and
+// `pinned`/`pinnedNote` (M1-T06's call, still local-only) with M0-equivalent
+// defaults. Everything else — including score/status — comes straight from
+// the synced custom fields via lacrmContactToLeadPatch(), not recomputed;
+// see the module comment for why. `called`/`lastContactDate` are filled in
+// by the caller from synced call-log Notes, same as `stage`.
+function contactToLead(contact: LacrmContact, settings: Settings): Lead {
   const patch = lacrmContactToLeadPatch(contact)
+  const score = patch.score ?? 0
+  const statusOverride = patch.statusOverride ?? null
   return {
     id: contact.ContactId,
     company: patch.company ?? '',
@@ -104,19 +127,19 @@ function contactToLead(contact: LacrmContact): Lead {
     city: patch.city ?? '',
     state: patch.state ?? '',
     timezone: '',
-    dealValue: 0,
+    dealValue: patch.dealValue ?? 0,
     stage: '',
-    score: 0,
-    scoreBreakdown: [],
-    status: 'Cold',
-    statusOverride: null,
+    score,
+    scoreBreakdown: patch.scoreBreakdown ?? [],
+    status: statusOverride ?? deriveStatus(score, settings),
+    statusOverride,
     pinned: false,
     pinnedNote: '',
     called: false,
     lastContactDate: null,
-    employees: null,
-    annualRevenue: null,
-    industry: null,
+    employees: patch.employees ?? null,
+    annualRevenue: patch.annualRevenue ?? null,
+    industry: patch.industry ?? null,
     jobTitle: patch.jobTitle ?? null,
     importedAt: new Date().toISOString(),
   }
@@ -132,6 +155,7 @@ interface State {
 
 type Action =
   | { type: 'HYDRATE_LEADS'; leads: Lead[] }
+  | { type: 'HYDRATE_CALL_LOGS'; callLogs: CallLog[] }
   | { type: 'ADD_LEAD'; lead: Lead }
   | { type: 'UPDATE_LEAD'; id: string; patch: Partial<Omit<Lead, 'id' | 'importedAt'>> }
   | { type: 'DELETE_LEAD'; id: string }
@@ -140,8 +164,16 @@ type Action =
 
 function reducer(state: State, action: Action): State {
   switch (action.type) {
+    // Trusts the leads as handed in (score/status included) — the caller
+    // (hydrate()) has already restored them from synced custom fields /
+    // call-log Notes. Do NOT re-run applyScoring here: that would recompute
+    // from whatever's known locally right now (nothing, on a fresh load) and
+    // clobber the accurate persisted value. See module comment.
     case 'HYDRATE_LEADS':
-      return { ...state, leads: action.leads.map(l => applyScoring(l, state.settings)) }
+      return { ...state, leads: action.leads }
+
+    case 'HYDRATE_CALL_LOGS':
+      return { ...state, callLogs: action.callLogs }
 
     case 'ADD_LEAD':
       return { ...state, leads: [...state.leads, applyScoring(action.lead, state.settings)] }
@@ -158,8 +190,21 @@ function reducer(state: State, action: Action): State {
     case 'DELETE_LEAD':
       return { ...state, leads: state.leads.filter(l => l.id !== action.id) }
 
+    // Logging a call is the one place `called`/`lastContactDate` change —
+    // derived here from call-log dates instead of being separately
+    // LACRM-synced fields, so they're automatically as durable as the call
+    // history itself (see markAsCalled() in LeadDrawer.tsx, which now logs
+    // a minimal call rather than patching these directly).
     case 'ADD_CALL_LOG':
-      return { ...state, callLogs: [...state.callLogs, action.log] }
+      return {
+        ...state,
+        callLogs: [...state.callLogs, action.log],
+        leads: state.leads.map(l => {
+          if (l.id !== action.log.leadId) return l
+          const isNewer = !l.lastContactDate || action.log.date > l.lastContactDate
+          return { ...l, called: true, lastContactDate: isNewer ? action.log.date : l.lastContactDate }
+        }),
+      }
 
     case 'UPDATE_SETTINGS': {
       const newSettings = { ...state.settings, ...action.patch }
@@ -174,6 +219,23 @@ function reducer(state: State, action: Action): State {
 
 const STATIC_LOADING: StoreLoading = { leads: false, callLogs: false, settings: false }
 const STATIC_ERROR: StoreError = { leads: null, callLogs: null, settings: null }
+
+// Creates any of SALESFORGE_CUSTOM_FIELDS missing from this LACRM account (first hydrate
+// only — a no-op every time after). Best-effort and non-fatal: if it fails (or an account
+// already has all the fields), leads/pipeline still load — the next write attempt will just
+// surface its own error via reportLacrmError() if the fields genuinely aren't there.
+async function ensureSalesforgeCustomFields(): Promise<void> {
+  try {
+    const existing = await getCustomFields()
+    const existingNames = new Set(existing.map(f => f.Name))
+    const missing = SALESFORGE_CUSTOM_FIELDS.filter(f => !existingNames.has(f.Name))
+    for (const field of missing) {
+      await createCustomField(field)
+    }
+  } catch {
+    // Swallowed — see comment above.
+  }
+}
 
 // ── Hook ────────────────────────────────────────────────────────────────
 
@@ -209,9 +271,11 @@ export function useLacrmStore(): AppStore {
 
     async function hydrate() {
       try {
-        const [contacts, pipelines] = await Promise.all([
+        const [contacts, pipelines, notes] = await Promise.all([
           getAllLacrmContacts(),
           getLacrmPipelines(),
+          getAllNotes(),
+          ensureSalesforgeCustomFields(),
         ])
         if (cancelled) return
 
@@ -228,18 +292,37 @@ export function useLacrmStore(): AppStore {
           }
         }
 
+        // Call history: SalesForge-authored Notes only (noteToCallLog() filters
+        // out anything else), plus the per-lead called/lastContactDate they imply.
+        const callLogs = notes
+          .map(noteToCallLog)
+          .filter((c): c is CallLog => c !== null)
+        const activityByContactId = new Map<string, { called: boolean; lastContactDate: string }>()
+        for (const log of callLogs) {
+          const existing = activityByContactId.get(log.leadId)
+          if (!existing || log.date > existing.lastContactDate) {
+            activityByContactId.set(log.leadId, { called: true, lastContactDate: log.date })
+          }
+        }
+
         const leads = contacts
           .filter(c => !c.IsCompany)
           .map(contact => {
-            const lead = contactToLead(contact)
+            const lead = contactToLead(contact, state.settings)
             const placement = itemsByContactId.get(contact.ContactId)
             if (placement && salesPipeline) {
               lead.stage = statusIdToStageName(placement.statusId, salesPipeline) ?? ''
+            }
+            const activity = activityByContactId.get(contact.ContactId)
+            if (activity) {
+              lead.called = activity.called
+              lead.lastContactDate = activity.lastContactDate
             }
             return lead
           })
 
         dispatch({ type: 'HYDRATE_LEADS', leads })
+        dispatch({ type: 'HYDRATE_CALL_LOGS', callLogs })
         setLoading(l => ({ ...l, leads: false }))
         announce(`${leads.length} ${leads.length === 1 ? 'lead' : 'leads'} loaded from LACRM.`)
       } catch (err) {
@@ -277,13 +360,16 @@ export function useLacrmStore(): AppStore {
     return resolvedStage
   }, [])
 
-  // Write-through: create a LACRM contact per lead (plus its pipeline
-  // placement if it carries a stage), adding each locally as it succeeds so
-  // a mid-batch failure doesn't lose the earlier successes.
+  // Write-through: create a LACRM contact per lead (scored first, so the
+  // initial score/breakdown/status land in the same create call — see
+  // applyScoring()) plus its pipeline placement if it carries a stage,
+  // adding each locally as it succeeds so a mid-batch failure doesn't lose
+  // the earlier successes.
   const importLeads = useCallback(async (leads: Lead[]) => {
     for (const lead of leads) {
-      const { ContactId } = await createLacrmContact(leadToLacrmContactInput(lead))
-      let stage = lead.stage
+      const scored = applyScoring(lead, state.settings)
+      const { ContactId } = await createLacrmContact(leadToLacrmContactInput(scored))
+      let stage = scored.stage
       if (stage) {
         try {
           stage = await syncStageToLacrm(ContactId, stage)
@@ -294,9 +380,9 @@ export function useLacrmStore(): AppStore {
           reportLacrmError(`place ${lead.company || 'a lead'} in the pipeline`, err)
         }
       }
-      dispatch({ type: 'ADD_LEAD', lead: { ...lead, id: ContactId, stage } })
+      dispatch({ type: 'ADD_LEAD', lead: { ...scored, id: ContactId, stage } })
     }
-  }, [syncStageToLacrm])
+  }, [state.settings, syncStageToLacrm])
 
   const updateLead = useCallback(
     async (id: string, patch: Partial<Omit<Lead, 'id' | 'importedAt'>>) => {
@@ -304,9 +390,15 @@ export function useLacrmStore(): AppStore {
       const current = state.leads.find(l => l.id === id)
       if (!current) return
 
-      if (touchesLacrmFields(patch)) {
+      // Recomputed once up front so both the contact-field write and the
+      // score/breakdown/status custom fields in the same payload reflect the
+      // same post-edit lead — including when the edit was to `stage`, which
+      // several scoring criteria (S-05..S-08) key off of.
+      const merged = applyScoring({ ...current, ...patch }, state.settings)
+
+      if (touchesLacrmFields(patch) || patch.stage != null) {
         try {
-          await updateLacrmContact(id, leadToLacrmContactInput({ ...current, ...patch }))
+          await updateLacrmContact(id, leadToLacrmContactInput(merged))
         } catch (err) {
           reportLacrmError(`save the change for ${current.company || 'a lead'} to LACRM`, err)
         }
@@ -323,7 +415,7 @@ export function useLacrmStore(): AppStore {
         }
       }
     },
-    [state.leads, syncStageToLacrm]
+    [state.leads, state.settings, syncStageToLacrm]
   )
 
   // No LACRM delete operation exists yet (T01's client only implements
@@ -332,10 +424,14 @@ export function useLacrmStore(): AppStore {
     dispatch({ type: 'DELETE_LEAD', id })
   }, [])
 
-  // Call history isn't wired to LACRM Notes yet (T04) — stays local.
+  // Write-through: one LACRM Note per call log (see callLogToNoteText() /
+  // noteToCallLog() in lacrmMapping.ts). NoteId becomes the CallLog's id —
+  // a real, durable, cross-device id. Throws on failure rather than
+  // swallowing it, so LogCallDialog's error path actually fires instead of
+  // silently pretending the call was logged.
   const addCallLog = useCallback(async (log: Omit<CallLog, 'id'>) => {
-    const id = `call-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
-    dispatch({ type: 'ADD_CALL_LOG', log: { ...log, id } })
+    const { NoteId } = await createNote(log.leadId, callLogToNoteText(log), log.date)
+    dispatch({ type: 'ADD_CALL_LOG', log: { ...log, id: NoteId } })
   }, [])
 
   // Settings are device-local, not an LACRM concept.

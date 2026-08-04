@@ -12,6 +12,14 @@ actually needs — see `src/index.ts` for why (purpose-built, not a generic pass
 - `PATCH /api/lacrm/contacts/:id` — edit a contact (`EditContact`)
 - `GET /api/lacrm/pipelines` — list pipelines + their statuses (`GetPipelines`), used to resolve
   confirmed stage names to LACRM `StatusId`s (see `src/utils/lacrmMapping.ts` in the app)
+- `GET /api/lacrm/pipeline-items?pipelineId=` — a pipeline's contact placements (`GetPipelineItems`)
+- `POST /api/lacrm/pipeline-items` — place a contact in a pipeline (`CreatePipelineItem`)
+- `PATCH /api/lacrm/pipeline-items/:id` — move a contact's stage (`EditPipelineItem`)
+- `GET /api/lacrm/custom-fields` — list Contact custom fields (`GetCustomFields`), used to bootstrap
+  the SalesForge score/status-override/scoring-input fields on first run
+- `POST /api/lacrm/custom-fields` — create a Contact custom field (`CreateCustomField`)
+- `GET /api/lacrm/notes` — list notes account-wide (`GetNotes`), used to read back call history
+- `POST /api/lacrm/notes` — attach a note to a contact (`CreateNote`), used to log a call
 
 ## One-time setup (Drew — these steps need a human with account access; Claude Code cannot do them)
 

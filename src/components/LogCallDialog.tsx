@@ -54,8 +54,9 @@ export default function LogCallDialog({ open, onClose, lead }: LogCallDialogProp
     setError(null)
     setBusy(true)
     try {
+      // called/lastContactDate are derived from call-log dates in the store
+      // (M1-T04) — no separate updateLead call needed here.
       await store.addCallLog({ leadId: lead.id, date, durationMinutes, outcome, notes })
-      await store.updateLead(lead.id, { called: true, lastContactDate: date })
       announce(`Call logged for ${lead.company}. Outcome: ${outcome}.`)
       reset()
       onClose()

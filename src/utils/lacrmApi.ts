@@ -4,10 +4,10 @@
  * Worker so the real API key never reaches the browser. See worker/README.md,
  * docs/specs/M1/M1-T01-lacrm-client-mapping.md, and M1-T03-lead-stage-sync.md.
  *
- * Read+write for contacts, read for pipelines, and read+write for pipeline
- * items (a contact's placement + status within a pipeline — T03's stage
- * sync) are implemented here. Notes and custom fields (score/hot-alert/
- * nurture) are mapped in lacrmMapping.ts but wired up by T04.
+ * Read+write for contacts, read for pipelines, read+write for pipeline items
+ * (a contact's placement + status within a pipeline — T03's stage sync),
+ * custom fields (score/status-override/scoring-input sync — T04), and notes
+ * (call-history sync — T04) are all implemented here.
  */
 
 const WORKER_URL = import.meta.env.VITE_WORKER_URL
@@ -44,8 +44,24 @@ export interface LacrmAddress {
   Type?: string
 }
 
+// M1-T04 custom-field keys. LACRM's Contacts API takes/returns custom field
+// values as flat top-level keys named after the field (confirmed against the
+// public v2 docs — same convention as the native 'Company Name'/'Job Title'
+// keys below), not a nested FieldId/value array. The literal strings here
+// must match the CF_* constants in lacrmMapping.ts exactly — that file owns
+// the canonical names and the CreateCustomField bootstrap spec.
+interface LacrmSalesforgeCustomFields {
+  'SalesForge Score'?: number
+  'SalesForge Score Breakdown'?: string
+  'SalesForge Status Override'?: string
+  'SalesForge Employees'?: number
+  'SalesForge Annual Revenue'?: number
+  'SalesForge Industry'?: string
+  'SalesForge Deal Value'?: number
+}
+
 // LACRM's Contacts API uses literal space-containing keys for a few fields.
-export interface LacrmContact {
+export interface LacrmContact extends LacrmSalesforgeCustomFields {
   ContactId: string
   IsCompany: boolean
   AssignedTo?: number
@@ -61,7 +77,7 @@ export interface LacrmContact {
 // CreateContact/EditContact take Name as a single string; GetContact returns
 // it split into { FirstName, LastName } — that's a real LACRM asymmetry, not
 // a mistake here.
-export interface LacrmContactInput {
+export interface LacrmContactInput extends LacrmSalesforgeCustomFields {
   IsCompany: boolean
   AssignedTo?: number
   Name: string
@@ -197,5 +213,97 @@ export async function editPipelineItem(pipelineItemId: string, statusId: string)
   await request<Record<string, never>>(`/api/lacrm/pipeline-items/${encodeURIComponent(pipelineItemId)}`, {
     method: 'PATCH',
     body: JSON.stringify({ StatusId: statusId }),
+  })
+}
+
+// ── Custom fields (M1-T04 — score/status-override/scoring-input sync) ────
+
+export interface LacrmCustomField {
+  CustomFieldId: string
+  Name: string
+  Type: string
+}
+
+export interface LacrmCustomFieldSearchResult {
+  HasMoreResults: boolean
+  Results: LacrmCustomField[]
+}
+
+export interface LacrmCustomFieldInput {
+  Name: string
+  Type: string
+  Options?: string[]
+}
+
+async function getCustomFieldsPage(page: number): Promise<LacrmCustomFieldSearchResult> {
+  return request<LacrmCustomFieldSearchResult>(`/api/lacrm/custom-fields?page=${page}`)
+}
+
+/** Pages through GetCustomFields (Contact record type) until HasMoreResults is false. Used to
+ *  check which of SALESFORGE_CUSTOM_FIELDS already exist before bootstrap-creating the rest. */
+export async function getCustomFields(): Promise<LacrmCustomField[]> {
+  const all: LacrmCustomField[] = []
+  let page = 1
+  while (true) {
+    const result = await getCustomFieldsPage(page)
+    all.push(...result.Results)
+    if (!result.HasMoreResults) break
+    page += 1
+  }
+  return all
+}
+
+export async function createCustomField(input: LacrmCustomFieldInput): Promise<{ CustomFieldId: string }> {
+  return request<{ CustomFieldId: string }>('/api/lacrm/custom-fields', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  })
+}
+
+// ── Notes (M1-T04 — call-history sync) ────────────────────────────────────
+
+export interface LacrmNote {
+  NoteId: string
+  ContactId: string
+  Note: string
+  DateDisplayedInHistory?: string
+}
+
+export interface LacrmNoteSearchResult {
+  HasMoreResults: boolean
+  Results: LacrmNote[]
+}
+
+async function getNotesPage(page: number): Promise<LacrmNoteSearchResult> {
+  return request<LacrmNoteSearchResult>(`/api/lacrm/notes?page=${page}`)
+}
+
+/** Pages through GetNotes (whole account, no ContactId filter — there's no bulk
+ *  per-contact notes endpoint) until HasMoreResults is false. Callers filter for
+ *  SalesForge-authored call-log notes; see noteToCallLog() in lacrmMapping.ts. */
+export async function getAllNotes(): Promise<LacrmNote[]> {
+  const all: LacrmNote[] = []
+  let page = 1
+  while (true) {
+    const result = await getNotesPage(page)
+    all.push(...result.Results)
+    if (!result.HasMoreResults) break
+    page += 1
+  }
+  return all
+}
+
+export async function createNote(
+  contactId: string,
+  note: string,
+  dateDisplayedInHistory?: string
+): Promise<{ NoteId: string }> {
+  return request<{ NoteId: string }>('/api/lacrm/notes', {
+    method: 'POST',
+    body: JSON.stringify({
+      ContactId: contactId,
+      Note: note,
+      ...(dateDisplayedInHistory ? { DateDisplayedInHistory: dateDisplayedInHistory } : {}),
+    }),
   })
 }

@@ -42,13 +42,25 @@ export default function LeadDrawer({ lead, onClose, settings }: LeadDrawerProps)
   const [email, setEmail] = useState<AiState>(INIT_AI)
   const [emailText, setEmailText] = useState('')
   const [logCallOpen, setLogCallOpen] = useState(false)
+  const [markingCalled, setMarkingCalled] = useState(false)
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([])
 
-  function markAsCalled() {
+  // "Mark as called" is a quick call log with no details (M1-T04) — logging it as a
+  // real CallLog, rather than patching called/lastContactDate directly, is what makes
+  // it durable through LACRM (see ADD_CALL_LOG in lacrmStore.ts).
+  async function markAsCalled() {
     if (!lead) return
+    setMarkingCalled(true)
     const date = new Date().toISOString().split('T')[0]
-    store.updateLead(lead.id, { called: true, lastContactDate: date })
-    announce(`${lead.company} marked as called.`)
+    try {
+      await store.addCallLog({ leadId: lead.id, date, durationMinutes: 0, outcome: 'Reached', notes: '' })
+      announce(`${lead.company} marked as called.`)
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Something went wrong.'
+      announce(`Error marking ${lead.company} as called: ${msg}`)
+    } finally {
+      setMarkingCalled(false)
+    }
   }
 
   function handleStageChange(e: React.ChangeEvent<HTMLSelectElement>) {
@@ -275,8 +287,8 @@ export default function LeadDrawer({ lead, onClose, settings }: LeadDrawerProps)
           )}
 
           <div className="drawer-call-actions">
-            <button type="button" className="btn-secondary" onClick={markAsCalled} disabled={lead.called}>
-              {lead.called ? 'Marked as called' : 'Mark as called'}
+            <button type="button" className="btn-secondary" onClick={markAsCalled} disabled={lead.called || markingCalled}>
+              {lead.called ? 'Marked as called' : markingCalled ? 'Marking…' : 'Mark as called'}
             </button>
             <button type="button" className="btn-secondary" onClick={() => setLogCallOpen(true)}>
               Log a call

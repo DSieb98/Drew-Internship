@@ -19,7 +19,7 @@ Both blockers are now resolved:
 | **T01** | LACRM API client & field mapping | REQ-04 core — API client/adapter, SalesForge↔LACRM field mapping | T00 | Done 2026-08-04 (`src/utils/lacrmApi.ts`, `src/utils/lacrmMapping.ts`) — untested against a live account, see decision writeup in `M1-T01-lacrm-client-mapping.md` |
 | **T02** | Async store swap | Swap M0's in-memory AppStore for an LACRM-backed store | T00, T01 | — |
 | **T03** | Lead records + pipeline stage sync | REQ-04 core + REQ-09 | T02 | — (B-01 resolved) |
-| **T04** | Extended-state sync | REQ-04 expanded: nurture, hot-alert, call history, notes, scores | T02, T03 | — |
+| **T04** | Extended-state sync | REQ-04 expanded: hot-alert, call history, scores | T02, T03 | Done 2026-08-04 — nurture deferred to M2 (D-24), see `M1-T04-extended-state-sync.md` |
 | **T05** | Conflict resolution & "LACRM wins" handling | PRINCIPLE-01 | T02–T04 | — |
 | **T06** | Watchlist sync decision + implementation | M0-T07 pins/notes: LACRM sync vs. device-local | T02 | Drew's decision (open blocker 4) |
 
@@ -27,4 +27,4 @@ Both blockers are now resolved:
 
 ## What "done" means for M1
 
-When all tasks pass their acceptance criteria, LACRM is the durable, authoritative store for every category PRINCIPLE-01 names — lead records, pipeline stages, nurture state, scores, hot alert status, call history, notes — the M0 in-memory store is fully retired, and Tim's daily workflow survives a page reload or a switch to a different device without data loss.
+When all tasks pass their acceptance criteria, LACRM is the durable, authoritative store for every category PRINCIPLE-01 names that actually exists yet — lead records, pipeline stages, scores, hot alert status, call history — the M0 in-memory store is fully retired, and Tim's daily workflow survives a page reload or a switch to a different device without data loss. Nurture state is the one exception (D-24): no nurture engine exists in the app yet to make durable, so that piece of PRINCIPLE-01 carries into M2, which builds the engine and closes it there.

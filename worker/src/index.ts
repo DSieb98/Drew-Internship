@@ -208,6 +208,37 @@ export default {
       return lacrmRoute('EditPipelineItem', { PipelineItemId: pipelineItemMatch[1], ...body }, env, origin)
     }
 
+    // ── M1-T04: custom fields (score/status/scoring-input sync) ────────────
+
+    if (pathname === '/api/lacrm/custom-fields' && method === 'GET') {
+      const page = Number(url.searchParams.get('page') ?? '1')
+      const maxResults = Number(url.searchParams.get('maxResults') ?? '500')
+      return lacrmRoute(
+        'GetCustomFields',
+        { RecordType: 'Contact', Page: page, MaxNumberOfResults: maxResults },
+        env,
+        origin
+      )
+    }
+
+    if (pathname === '/api/lacrm/custom-fields' && method === 'POST') {
+      const body = await req.json().catch(() => ({})) as Record<string, unknown>
+      return lacrmRoute('CreateCustomField', body, env, origin)
+    }
+
+    // ── M1-T04: notes (call history sync) ───────────────────────────────────
+
+    if (pathname === '/api/lacrm/notes' && method === 'GET') {
+      const page = Number(url.searchParams.get('page') ?? '1')
+      const maxResults = Number(url.searchParams.get('maxResults') ?? '500')
+      return lacrmRoute('GetNotes', { Page: page, MaxNumberOfResults: maxResults }, env, origin)
+    }
+
+    if (pathname === '/api/lacrm/notes' && method === 'POST') {
+      const body = await req.json().catch(() => ({})) as Record<string, unknown>
+      return lacrmRoute('CreateNote', body, env, origin)
+    }
+
     return json({ error: 'Not found.' }, 404, origin)
   },
 }

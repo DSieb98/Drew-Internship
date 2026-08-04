@@ -1,16 +1,66 @@
 /**
- * SalesForge Lead ↔ LACRM field mapping (M1-T01, extended in M1-T03).
- * Full category-by-category decision writeup: docs/specs/M1/M1-T01-lacrm-client-mapping.md
- * and M1-T03-lead-stage-sync.md.
+ * SalesForge Lead ↔ LACRM field mapping (M1-T01, extended in M1-T03/T04).
+ * Full category-by-category decision writeup: docs/specs/M1/M1-T01-lacrm-client-mapping.md,
+ * M1-T03-lead-stage-sync.md, and M1-T04-extended-state-sync.md.
  *
- * This module covers Contact field mapping and pipeline stage-name
- * reconciliation, both wired end-to-end (T03). Nurture state, scores,
- * hot-alert status, call history, and notes are *documented* here (as
- * constants/comments) but their sync logic is T04's job.
+ * This module covers Contact field mapping (native + T04's custom fields),
+ * pipeline stage-name reconciliation, and call-log ↔ Note conversion — all
+ * wired end-to-end. Nurture-sequence state stays out of scope (D-24 — no
+ * nurture engine exists yet to sync; deferred to M2, which builds one).
+ * Watchlist pin/note sync is T06's call, not this file's.
  */
 
-import type { Lead } from '../store/types'
-import type { LacrmContact, LacrmContactInput, LacrmPipeline } from './lacrmApi'
+import type { CallLog, Lead, ScoreCriterionResult } from '../store/types'
+import type { LacrmContact, LacrmContactInput, LacrmNote, LacrmPipeline } from './lacrmApi'
+
+// ── Custom fields (M1-T04 — score/status-override/scoring-input sync) ────
+//
+// LACRM's API takes/returns custom field values as flat top-level keys named
+// after the field (confirmed against the public v2 docs — same convention as
+// the native 'Company Name'/'Job Title' keys above), not a nested
+// FieldId/value array. These constants are the single source of truth for
+// those names — lacrmApi.ts's LacrmContact/LacrmContactInput interfaces
+// declare the matching literal keys and must be kept in sync by hand if
+// renamed here.
+export const CF_SCORE = 'SalesForge Score' as const
+export const CF_SCORE_BREAKDOWN = 'SalesForge Score Breakdown' as const
+export const CF_STATUS_OVERRIDE = 'SalesForge Status Override' as const
+export const CF_EMPLOYEES = 'SalesForge Employees' as const
+export const CF_ANNUAL_REVENUE = 'SalesForge Annual Revenue' as const
+export const CF_INDUSTRY = 'SalesForge Industry' as const
+export const CF_DEAL_VALUE = 'SalesForge Deal Value' as const
+
+export interface SalesforgeCustomFieldSpec {
+  Name: string
+  Type: string
+  Options?: string[]
+}
+
+/** Bootstrap spec for ensureSalesforgeCustomFields() (lacrmStore.ts) — created once per
+ *  account, on first hydrate, if not already present. RecordType defaults to Contact. */
+export const SALESFORGE_CUSTOM_FIELDS: SalesforgeCustomFieldSpec[] = [
+  { Name: CF_SCORE, Type: 'Number' },
+  { Name: CF_SCORE_BREAKDOWN, Type: 'TextArea' },
+  { Name: CF_STATUS_OVERRIDE, Type: 'Dropdown', Options: ['Hot', 'Warm', 'Cold'] },
+  { Name: CF_EMPLOYEES, Type: 'Number' },
+  { Name: CF_ANNUAL_REVENUE, Type: 'Currency' },
+  { Name: CF_INDUSTRY, Type: 'Text' },
+  { Name: CF_DEAL_VALUE, Type: 'Currency' },
+]
+
+function encodeScoreBreakdown(breakdown: ScoreCriterionResult[]): string {
+  return JSON.stringify(breakdown)
+}
+
+function decodeScoreBreakdown(raw: string | undefined): ScoreCriterionResult[] {
+  if (!raw) return []
+  try {
+    const parsed = JSON.parse(raw)
+    return Array.isArray(parsed) ? parsed : []
+  } catch {
+    return []
+  }
+}
 
 // ── Lead ↔ Contact ───────────────────────────────────────────────────────
 
@@ -26,6 +76,18 @@ export function leadToLacrmContactInput(lead: Lead): LacrmContactInput {
   if (lead.city || lead.state) {
     input.Address = [{ City: lead.city || undefined, State: lead.state || undefined, Type: 'Work' }]
   }
+
+  // M1-T04 — score is always written (recomputed on every local edit, see
+  // applyScoring() in lacrmStore.ts) so a plain reload restores the exact
+  // last-known-accurate value rather than re-deriving from partial inputs.
+  input[CF_SCORE] = lead.score
+  input[CF_SCORE_BREAKDOWN] = encodeScoreBreakdown(lead.scoreBreakdown)
+  input[CF_DEAL_VALUE] = lead.dealValue
+  if (lead.statusOverride) input[CF_STATUS_OVERRIDE] = lead.statusOverride
+  if (lead.employees != null) input[CF_EMPLOYEES] = lead.employees
+  if (lead.annualRevenue != null) input[CF_ANNUAL_REVENUE] = lead.annualRevenue
+  if (lead.industry) input[CF_INDUSTRY] = lead.industry
+
   return input
 }
 
@@ -42,7 +104,60 @@ export function lacrmContactToLeadPatch(contact: LacrmContact): Partial<Lead> {
     patch.city = address.City ?? ''
     patch.state = address.State ?? ''
   }
+
+  if (typeof contact[CF_SCORE] === 'number') patch.score = contact[CF_SCORE]
+  patch.scoreBreakdown = decodeScoreBreakdown(contact[CF_SCORE_BREAKDOWN])
+  if (typeof contact[CF_DEAL_VALUE] === 'number') patch.dealValue = contact[CF_DEAL_VALUE]
+  const override = contact[CF_STATUS_OVERRIDE]
+  patch.statusOverride = override === 'Hot' || override === 'Warm' || override === 'Cold' ? override : null
+  patch.employees = typeof contact[CF_EMPLOYEES] === 'number' ? contact[CF_EMPLOYEES] : null
+  patch.annualRevenue = typeof contact[CF_ANNUAL_REVENUE] === 'number' ? contact[CF_ANNUAL_REVENUE] : null
+  patch.industry = contact[CF_INDUSTRY] || null
+
   return patch
+}
+
+// ── Call log ↔ Note (M1-T04 — call-history sync) ────────────────────────
+//
+// LACRM has no per-record "call log" concept, so each CallLog is written as
+// one Note (CreateNote) attached to the contact, marked with a recognizable
+// first line so hydrate can tell SalesForge-authored call logs apart from
+// any other note a user enters directly in LACRM (which this app doesn't
+// model and leaves untouched). CallLog.id becomes the Note's NoteId — a
+// real, durable, cross-device id instead of the old client-generated one.
+
+const CALL_LOG_NOTE_MARKER = 'SalesForge Call Log'
+
+export function callLogToNoteText(log: Omit<CallLog, 'id'>): string {
+  return `${CALL_LOG_NOTE_MARKER}\n${JSON.stringify({
+    date: log.date,
+    durationMinutes: log.durationMinutes,
+    outcome: log.outcome,
+    notes: log.notes,
+  })}`
+}
+
+/** Returns null for any note that isn't a SalesForge call-log note (wrong marker,
+ *  or malformed) — callers filter those out rather than treating them as an error. */
+export function noteToCallLog(note: LacrmNote): CallLog | null {
+  const newlineIdx = note.Note.indexOf('\n')
+  if (newlineIdx === -1) return null
+  const marker = note.Note.slice(0, newlineIdx)
+  if (marker !== CALL_LOG_NOTE_MARKER) return null
+  try {
+    const parsed = JSON.parse(note.Note.slice(newlineIdx + 1).trim())
+    if (!parsed || typeof parsed !== 'object') return null
+    return {
+      id: note.NoteId,
+      leadId: note.ContactId,
+      date: parsed.date,
+      durationMinutes: parsed.durationMinutes,
+      outcome: parsed.outcome,
+      notes: parsed.notes ?? '',
+    }
+  } catch {
+    return null
+  }
 }
 
 // ── Pipeline stage reconciliation (B-01) ────────────────────────────────
@@ -136,17 +251,18 @@ export function selectSalesPipeline(pipelines: LacrmPipeline[]): LacrmPipeline |
   return best
 }
 
-// ── Deferred categories (documented target, not yet wired — T04) ───────
+// ── Still deferred, on purpose (D-24) ───────────────────────────────────
 //
-// - Score, statusOverride, employees/annualRevenue/industry inputs → LACRM
-//   Contact-level Custom Fields, created via CreateCustomField if absent:
-//   "SalesForge Score" (Number), "SalesForge Status Override" (Dropdown:
-//   Hot/Warm/Cold), "SalesForge Employees" (Number), "SalesForge Annual
-//   Revenue" (Currency), "SalesForge Industry" (Text).
-// - Hot-alert status → a "SalesForge Hot Alert" Checkbox custom field.
-// - Nurture step (M2) → a "SalesForge Nurture Step" Number custom field.
-// - Call history (CallLog[]) → one LACRM Note per call log entry
-//   (CreateNote with ContactId + a formatted Note body: date, duration,
-//   outcome, notes), read back via GetNotesAttachedToContact.
+// - Hot-alert status has no field of its own — it's the Today page's live
+//   filter (Hot status + dealValue ≥ settings.hotAlertMinDealValue), and
+//   both of those now sync (status via score, dealValue via CF_DEAL_VALUE),
+//   so the alert is already consistent across reload/devices without extra
+//   storage. hotAlertMinDealValue itself stays a device-local Setting.
+// - Nurture-sequence state: no nurture engine exists yet (NurturePage is
+//   still M0's placeholder) — nothing real to sync. Deferred to M2, which
+//   scopes building the engine and resolving B-03 together.
 // - pinned / pinnedNote (Watchlist) → explicitly NOT decided here; owned by
 //   M1-T06 (open blocker 4 — LACRM-synced vs. device-local scratchpad).
+//   Scoring criteria that key off pinnedNote (S-05/06/07/08) stay slightly
+//   stale across a reload until T06 lands — see applyScoring() in
+//   lacrmStore.ts for how the persisted score/breakdown route around that.
