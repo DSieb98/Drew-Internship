@@ -1,17 +1,21 @@
 /**
- * SalesForge credential proxy (M1-T00).
+ * SalesForge credential proxy (M1-T00) + LACRM client (M1-T01).
  *
  * The static app on GitHub Pages cannot hold API secrets — anything shipped
  * to the browser is public. This Worker holds the real LACRM + Anthropic
- * keys server-side and exposes only the two narrow operations the app
- * actually needs, so a leaked Worker URL can't be used for arbitrary LACRM
- * or Anthropic calls.
+ * keys server-side and exposes only the narrow operations the app actually
+ * needs, so a leaked Worker URL can't be used for arbitrary LACRM or
+ * Anthropic calls.
+ *
+ * LACRM uses its v2 API: POST https://api.lessannoyingcrm.com/v2/ with an
+ * `Authorization: <API_KEY>` header (raw key, no "Bearer" prefix) and a
+ * `{ Function, Parameters }` JSON body. Key is generated at
+ * https://account.lessannoyingcrm.com/app/Settings/Api.
  */
 
 export interface Env {
   ANTHROPIC_API_KEY: string
-  LACRM_USER_CODE: string
-  LACRM_API_TOKEN: string
+  LACRM_API_KEY: string
 }
 
 const ALLOWED_ORIGINS = new Set([
@@ -22,11 +26,11 @@ const ALLOWED_ORIGINS = new Set([
 
 const ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages'
 const ANTHROPIC_MODEL = 'claude-haiku-4-5'
-const LACRM_URL = 'https://api.lessannoyingcrm.com'
+const LACRM_URL = 'https://api.lessannoyingcrm.com/v2/'
 
 function corsHeaders(origin: string | null): Record<string, string> {
   const headers: Record<string, string> = {
-    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    'Access-Control-Allow-Methods': 'GET, POST, PATCH, OPTIONS',
     'Access-Control-Allow-Headers': 'content-type',
     Vary: 'Origin',
   }
@@ -42,6 +46,8 @@ function json(data: unknown, status: number, origin: string | null): Response {
     headers: { 'content-type': 'application/json', ...corsHeaders(origin) },
   })
 }
+
+// ── Anthropic ─────────────────────────────────────────────────────────────
 
 interface AnthropicChatBody {
   prompt?: string
@@ -95,46 +101,82 @@ async function handleAnthropicChat(req: Request, env: Env, origin: string | null
   return json({ text }, 200, origin)
 }
 
-interface LacrmUpstreamResponse {
+// ── LACRM ─────────────────────────────────────────────────────────────────
+
+interface LacrmSuccessEnvelope {
   Success?: boolean
   Error?: string
 }
 
-async function handleLacrmPing(env: Env, origin: string | null): Promise<Response> {
-  const url = new URL(LACRM_URL)
-  url.searchParams.set('UserCode', env.LACRM_USER_CODE)
-  url.searchParams.set('APIToken', env.LACRM_API_TOKEN)
-  url.searchParams.set('Function', 'GetUserInfo')
+async function callLacrm<T>(env: Env, fn: string, parameters: Record<string, unknown> = {}): Promise<T> {
+  const upstream = await fetch(LACRM_URL, {
+    method: 'POST',
+    headers: {
+      Authorization: env.LACRM_API_KEY,
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify({ Function: fn, Parameters: parameters }),
+  })
 
-  let upstream: Response
+  const data = await upstream.json().catch(() => null) as (T & LacrmSuccessEnvelope) | null
+  if (!upstream.ok || !data || data.Success === false) {
+    throw new Error(data?.Error ?? `LACRM error (${upstream.status}) calling ${fn}.`)
+  }
+  return data
+}
+
+async function lacrmRoute(fn: string, parameters: Record<string, unknown>, env: Env, origin: string | null): Promise<Response> {
   try {
-    upstream = await fetch(url.toString())
-  } catch {
-    return json({ ok: false, error: 'Could not reach LACRM right now. Please try again shortly.' }, 502, origin)
+    const data = await callLacrm(env, fn, parameters)
+    return json(data, 200, origin)
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Could not reach LACRM right now. Please try again shortly.'
+    return json({ error: message }, 502, origin)
   }
-
-  const data = await upstream.json().catch(() => null) as LacrmUpstreamResponse | null
-  if (!data || data.Success !== true) {
-    return json({ ok: false, error: data?.Error ?? 'LACRM rejected the stored credentials.' }, 502, origin)
-  }
-  return json({ ok: true }, 200, origin)
 }
 
 export default {
   async fetch(req: Request, env: Env): Promise<Response> {
     const origin = req.headers.get('Origin')
     const url = new URL(req.url)
+    const { pathname } = url
+    const { method } = req
 
-    if (req.method === 'OPTIONS') {
+    if (method === 'OPTIONS') {
       return new Response(null, { status: 204, headers: corsHeaders(origin) })
     }
 
-    if (url.pathname === '/api/anthropic/chat' && req.method === 'POST') {
+    if (pathname === '/api/anthropic/chat' && method === 'POST') {
       return handleAnthropicChat(req, env, origin)
     }
-    if (url.pathname === '/api/lacrm/ping' && req.method === 'GET') {
-      return handleLacrmPing(env, origin)
+
+    if (pathname === '/api/lacrm/ping' && method === 'GET') {
+      return lacrmRoute('GetUser', {}, env, origin)
     }
+
+    if (pathname === '/api/lacrm/contacts' && method === 'GET') {
+      const search = url.searchParams.get('search') ?? ''
+      return lacrmRoute('GetContacts', { SearchTerms: search, RecordTypeFilter: 'Contacts' }, env, origin)
+    }
+
+    if (pathname === '/api/lacrm/contacts' && method === 'POST') {
+      const body = await req.json().catch(() => ({})) as Record<string, unknown>
+      return lacrmRoute('CreateContact', body, env, origin)
+    }
+
+    const contactMatch = pathname.match(/^\/api\/lacrm\/contacts\/([^/]+)$/)
+    if (contactMatch && method === 'GET') {
+      return lacrmRoute('GetContact', { ContactId: contactMatch[1] }, env, origin)
+    }
+    if (contactMatch && method === 'PATCH') {
+      const body = await req.json().catch(() => ({})) as Record<string, unknown>
+      return lacrmRoute('EditContact', { ContactId: contactMatch[1], ...body }, env, origin)
+    }
+
+    if (pathname === '/api/lacrm/pipelines' && method === 'GET') {
+      return lacrmRoute('GetPipelines', {}, env, origin)
+    }
+
     return json({ error: 'Not found.' }, 404, origin)
   },
 }

@@ -3,5 +3,4 @@
 # For production, set these with `wrangler secret put <NAME>` instead (see worker/README.md).
 
 ANTHROPIC_API_KEY=
-LACRM_USER_CODE=
-LACRM_API_TOKEN=
+LACRM_API_KEY=

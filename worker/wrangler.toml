@@ -3,8 +3,8 @@
 # Pages static site never embeds them client-side. Deployed independently of
 # the static site — see .github/workflows/deploy-worker.yml.
 #
-# Secrets (ANTHROPIC_API_KEY, LACRM_USER_CODE, LACRM_API_TOKEN) are NOT set
-# here — set them once via `wrangler secret put <NAME>` (see worker/README.md).
+# Secrets (ANTHROPIC_API_KEY, LACRM_API_KEY) are NOT set here — set them once
+# via `wrangler secret put <NAME>` (see worker/README.md).
 
 name = "salesforge-api"
 main = "src/index.ts"

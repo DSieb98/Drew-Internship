@@ -1,11 +1,17 @@
 # SalesForge API Worker (M1-T00)
 
 A small Cloudflare Worker that holds the LACRM and Anthropic API secrets server-side so the
-public GitHub Pages static site never embeds them. It exposes exactly two endpoints — see
-`src/index.ts` for why (purpose-built, not a generic pass-through proxy).
+public GitHub Pages static site never embeds them. It exposes only the narrow endpoints the app
+actually needs — see `src/index.ts` for why (purpose-built, not a generic pass-through proxy).
 
 - `POST /api/anthropic/chat` — `{ prompt: string }` → `{ text: string }`
-- `GET /api/lacrm/ping` — connectivity check → `{ ok: boolean }`
+- `GET /api/lacrm/ping` — connectivity check (calls LACRM's `GetUser`) → current user info
+- `GET /api/lacrm/contacts?search=` — search contacts (`GetContacts`)
+- `GET /api/lacrm/contacts/:id` — get one contact (`GetContact`)
+- `POST /api/lacrm/contacts` — create a contact (`CreateContact`)
+- `PATCH /api/lacrm/contacts/:id` — edit a contact (`EditContact`)
+- `GET /api/lacrm/pipelines` — list pipelines + their statuses (`GetPipelines`), used to resolve
+  confirmed stage names to LACRM `StatusId`s (see `src/utils/lacrmMapping.ts` in the app)
 
 ## One-time setup (Drew — these steps need a human with account access; Claude Code cannot do them)
 
@@ -17,13 +23,15 @@ public GitHub Pages static site never embeds them. It exposes exactly two endpoi
    npm install
    npx wrangler login
    ```
-3. **Get your LACRM credentials:** LACRM account → Settings → API Access. You need your
-   `UserCode` and `APIToken` (separate values, not the OAuth app flow).
-4. **Set the three secrets** (never go in the repo or `wrangler.toml`):
+3. **Get your LACRM API key:** log into LACRM as whichever user's credentials should be used
+   (see the "whose LACRM login" question already discussed — pull from Tim once decided), then go
+   to the [Programmer API settings page](https://account.lessannoyingcrm.com/app/Settings/Api) and
+   generate a key. This is a single key (LACRM's v2 API) — not the older UserCode+APIToken pair
+   some third-party docs reference.
+4. **Set the two secrets** (never go in the repo or `wrangler.toml`):
    ```bash
    npx wrangler secret put ANTHROPIC_API_KEY
-   npx wrangler secret put LACRM_USER_CODE
-   npx wrangler secret put LACRM_API_TOKEN
+   npx wrangler secret put LACRM_API_KEY
    ```
 5. **Deploy once manually** to get the Worker's URL:
    ```bash

@@ -37,3 +37,55 @@ LACRM API library/SDK choice (if any), the shape of the internal mapping represe
 
 - Spec v1.2: PRINCIPLE-01, REQ-04, REQ-09, B-01 resolution procedure (§5)
 - PROFORMA-STATE-v8.md: Open Blocker 1 (B-01), Key File Locations
+
+---
+
+## Decision & what was built (resolved 2026-08-04)
+
+**API used:** LACRM's officially documented v2 API (`https://api.lessannoyingcrm.com/v2/`,
+`Authorization: <single API key>` header, `{Function, Parameters}` JSON body — see
+`account.lessannoyingcrm.com/api_docs/v2`). This **replaces** the legacy UserCode+APIToken GET-based
+API T00's `/api/lacrm/ping` was originally built against (a reverse-engineered guess from a
+third-party R package, since account documentation requires login) — the real docs turned out to
+be publicly reachable and better. `worker/README.md` step 3 and the `LACRM_API_KEY` secret name
+reflect the correction.
+
+**Client (`src/utils/lacrmApi.ts`) — read + write for contacts, read for pipelines:**
+`pingLacrm()` (`GetUser`), `searchLacrmContacts()` / `getLacrmContact()` / `createLacrmContact()`
+/ `updateLacrmContact()` (`GetContacts`/`GetContact`/`CreateContact`/`EditContact`),
+`getLacrmPipelines()` (`GetPipelines`, needed to resolve stage names to `StatusId`s). All go
+through the Worker (D-21) — never call LACRM directly from the browser.
+
+**Field mapping (`src/utils/lacrmMapping.ts`) — covers every PRINCIPLE-01 category:**
+- **Lead records** (contact/company/email/phone/city/state/job title) ↔ LACRM Contact fields —
+  implemented now (`leadToLacrmContactInput` / `lacrmContactToLeadPatch`).
+- **Pipeline stages** — implemented now. Resolution of the B-01 mapping ambiguities (done here,
+  not guessed):
+  - `New Lead` / `Contacted` → **no LACRM stage.** These are pre-qualification, SalesForge-only
+    states — REQ-04 only creates the CRM record at `Qualified`. The Contact still syncs
+    (PRINCIPLE-01), just without a pipeline placement yet.
+  - `Proposal Sent` / `Quote Requested` → both collapse into the single confirmed **`Quote`**
+    stage.
+  - `Follow-Up` → **`Needs Analysis`** (closest fit).
+  - `Sample Sent` → **`Sample Box Sent`** (naming difference only).
+  - Going forward, `Lead.stage` should hold a canonical LACRM name directly — the migration table
+    only exists to reconcile pre-existing placeholder data on first sync.
+  - `resolveStageStatusId()` matches by name against the *live* pipeline fetched via
+    `GetPipelines()` rather than hardcoding `StatusId`s, so if `Qualified` (or any name) turns out
+    not to exist as a real status on Drew's actual LACRM pipeline, that's a `null` at runtime for
+    T03 to handle explicitly rather than a wrong hardcoded guess baked in now.
+- **Score, hot-alert status, nurture step** (and the scoring inputs employees/revenue/industry) →
+  targeted at LACRM Contact-level **Custom Fields** (to be created via `CreateCustomField` if
+  absent). Documented as constants/comments in `lacrmMapping.ts`; not implemented — that's T04
+  ("Extended-state sync").
+- **Call history** → targeted at one LACRM **Note** per `CallLog` entry (`CreateNote`, read via
+  `GetNotesAttachedToContact`). Documented, not implemented — T04.
+- **Watchlist pins/notes** → explicitly **not** decided here; owned by T06 (open blocker 4).
+
+**Not yet verified against a live account:** Drew hasn't pulled LACRM API credentials yet (needs
+to catch up with Tim on whose login to use — see `worker/README.md` step 3). Everything above
+typechecks and builds, and the request/response shapes match LACRM's public v2 docs exactly, but
+the acceptance criterion "the client can read and write a real lead record to/from LACRM
+successfully" is unverified against a real account until those credentials exist and a live smoke
+test is run (the Settings page's "Test LACRM connection" button, built in T00, is that smoke
+test).

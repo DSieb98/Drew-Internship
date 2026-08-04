@@ -15,8 +15,8 @@ Both blockers are now resolved:
 
 | Task | Name | Covers | Depends on | Blocked by |
 | :-- | :-- | :-- | :-- | :-- |
-| **T00** | Credential architecture decision + implementation | Secure credential handling for LACRM + Anthropic calls from a static site | — | Drew's architecture decision |
-| **T01** | LACRM API client & field mapping | REQ-04 core — API client/adapter, SalesForge↔LACRM field mapping | T00 | — (B-01 resolved; stage names ready for mapping) |
+| **T00** | Credential architecture decision + implementation | Secure credential handling for LACRM + Anthropic calls from a static site | — | Done 2026-08-04, pending Drew's account setup (`worker/README.md`) |
+| **T01** | LACRM API client & field mapping | REQ-04 core — API client/adapter, SalesForge↔LACRM field mapping | T00 | Done 2026-08-04 (`src/utils/lacrmApi.ts`, `src/utils/lacrmMapping.ts`) — untested against a live account, see decision writeup in `M1-T01-lacrm-client-mapping.md` |
 | **T02** | Async store swap | Swap M0's in-memory AppStore for an LACRM-backed store | T00, T01 | — |
 | **T03** | Lead records + pipeline stage sync | REQ-04 core + REQ-09 | T02 | — (B-01 resolved) |
 | **T04** | Extended-state sync | REQ-04 expanded: nurture, hot-alert, call history, notes, scores | T02, T03 | — |
