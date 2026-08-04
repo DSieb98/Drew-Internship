@@ -1,12 +1,11 @@
 import { createContext, ReactNode, useContext } from 'react'
 import { AppStore } from './types'
-import { useInMemoryStore } from './inMemoryStore'
+import { useLacrmStore } from './lacrmStore'
 
 const StoreContext = createContext<AppStore | null>(null)
 
-// M1 swap point: replace useInMemoryStore() here with the LACRM-backed implementation.
 export function StoreProvider({ children }: { children: ReactNode }) {
-  const store = useInMemoryStore()
+  const store = useLacrmStore()
   return <StoreContext.Provider value={store}>{children}</StoreContext.Provider>
 }
 

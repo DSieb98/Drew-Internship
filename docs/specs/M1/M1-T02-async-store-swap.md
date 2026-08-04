@@ -38,3 +38,55 @@ Internal store implementation (state management approach, caching strategy) is C
 
 - PROFORMA-STATE-v8.md: "What was built this session" (T02 confirm-path note), Tech Stack ("In-memory store only in M0 — async contract, ready for M1 LACRM swap")
 - Spec v1.2: PRINCIPLE-01
+
+---
+
+## Decision & what was built (2026-08-04)
+
+`src/store/lacrmStore.ts` (`useLacrmStore`) replaces `useInMemoryStore` as the sole
+`StoreProvider` implementation (`inMemoryStore.ts` deleted — no longer referenced anywhere).
+`AppStore`'s public shape (`src/store/types.ts`) was untouched, so every M0 feature component
+compiles and runs against it unmodified, per the constraint.
+
+**Read-through:** on mount, fetches contacts via `searchLacrmContacts('')` (T01's `GetContacts`
+wrapper) and maps each non-company contact to a `Lead` via `lacrmContactToLeadPatch`, using the
+LACRM `ContactId` as `Lead.id`. Fields LACRM doesn't hold a home for yet — `stage`, `dealValue`,
+`score`/`scoreBreakdown`, `pinned`/`pinnedNote`, `called`/`lastContactDate`,
+`employees`/`annualRevenue`/`industry` — default the same way a fresh import row defaults them.
+That's intentional, not a bug: T01's mapping doc targets those categories at LACRM Custom Fields
+and Notes, and wiring that sync is explicitly T03 (stage) / T04 (everything else)'s job, not
+T02's. Scoring is still applied client-side via the existing `scoreLead`/`deriveStatus`, so a
+freshly-hydrated lead is consistently `Cold`/0 until T03/T04 land — expected, not silent data
+loss.
+
+**Write-through:** `importLeads` calls `createLacrmContact` per lead (sequential, so a mid-batch
+failure still leaves the already-created contacts both in LACRM and in local state — nothing
+already-written gets dropped) and swaps in the real `ContactId`. `updateLead` always applies the
+local optimistic update first; if the patch touches an LACRM-mapped contact field
+(`contactName`/`company`/`email`/`phone`/`city`/`state`/`jobTitle`), it also fires
+`updateLacrmContact` in the background — on failure this sets `store.error.leads` and announces
+it rather than throwing, since several existing callers (`useTogglePin`, `MyListPage`,
+`LeadDrawer`) call `updateLead` fire-and-forget without a catch. `deleteLead` is local-only for
+now — T01's client never implemented an LACRM delete operation (out of its stated scope), so
+there's nothing to write through to yet. `addCallLog` and `updateSettings` are unchanged
+local-only actions (Notes sync is T04; Settings was never an LACRM concept).
+
+**Loading/error UI:** `TodayPage` and `AllLeadsPage` (the two "leads list" surfaces) now branch
+on `store.loading.leads` / `store.error.leads` in their empty-state instead of always assuming
+"no leads yet" — a role="status" loading message and a role="alert" error message, both also
+announced via `useAnnounce()` from inside the store hook itself (fires once, on hydrate
+success/failure), satisfying PRINCIPLE-03's "no silent spinners."
+
+**Known gap, flagged not guessed:** `searchLacrmContacts('')` only reads one page of
+`GetContacts` — `LacrmContactSearchResult.HasMoreResults` exists but nothing pages through it.
+Left unresolved because there are still no live LACRM credentials to confirm the real page size
+or pagination parameter name (same blocker T01 hit) — guessing the parameter risks silently
+dropping contacts past page 1, which is worse than the current honest "not yet handled." Needs a
+live smoke test before this is trusted for an account with a large contact list.
+
+**Not verified against a live account**, same caveat as T01 — no LACRM credentials pulled yet.
+`npm run typecheck` and `npm run build` both pass; the unconfigured-`VITE_WORKER_URL` path was
+traced end-to-end (throws synchronously in `lacrmApi.ts`'s `request()`, caught by `hydrate()`,
+surfaces as the new error state, no crash, no other console errors) but not visually confirmed in
+a browser in this session — no headless-browser tooling was available in this Windows
+environment to drive one.

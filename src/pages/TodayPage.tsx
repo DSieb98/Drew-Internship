@@ -21,7 +21,7 @@ export default function TodayPage() {
   const store = useStore()
   const announce = useAnnounce()
   const togglePin = useTogglePin()
-  const { leads, settings } = store
+  const { leads, settings, loading, error } = store
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null)
 
   // Stable "now" for the whole render (avoid per-card drift)
@@ -78,9 +78,15 @@ export default function TodayPage() {
     return (
       <section aria-labelledby="today-heading">
         <h2 id="today-heading" className="page-heading">Today</h2>
-        <div className="placeholder-content">
-          <p>No leads yet. Import leads from the All Leads page to see your daily priorities here.</p>
-        </div>
+        {loading.leads ? (
+          <p className="placeholder-content" role="status">Loading leads from LACRM…</p>
+        ) : error.leads ? (
+          <p className="dialog-error" role="alert">Couldn't load leads from LACRM: {error.leads}</p>
+        ) : (
+          <div className="placeholder-content">
+            <p>No leads yet. Import leads from the All Leads page to see your daily priorities here.</p>
+          </div>
+        )}
       </section>
     )
   }

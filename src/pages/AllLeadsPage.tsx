@@ -27,7 +27,7 @@ export default function AllLeadsPage() {
   const store = useStore()
   const announce = useAnnounce()
   const togglePin = useTogglePin()
-  const { leads, settings } = store
+  const { leads, settings, loading, error } = store
 
   const [dialogOpen, setDialogOpen] = useState(false)
   const [lastImportCount, setLastImportCount] = useState<number | null>(null)
@@ -88,9 +88,15 @@ export default function AllLeadsPage() {
       )}
 
       {leads.length === 0 ? (
-        <div className="placeholder-content">
-          <p>No leads yet. Use the button above to import leads from a spreadsheet.</p>
-        </div>
+        loading.leads ? (
+          <p className="placeholder-content" role="status">Loading leads from LACRM…</p>
+        ) : error.leads ? (
+          <p className="dialog-error" role="alert">Couldn't load leads from LACRM: {error.leads}</p>
+        ) : (
+          <div className="placeholder-content">
+            <p>No leads yet. Use the button above to import leads from a spreadsheet.</p>
+          </div>
+        )
       ) : (
         <>
           {/* Filter bar */}
