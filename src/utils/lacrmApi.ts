@@ -31,6 +31,38 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return data
 }
 
+// Pages through a `{ Results, HasMoreResults }`-shaped LACRM search endpoint. LACRM's pagination
+// is a plain page NUMBER, not a cursor/token — unlike cursor pagination, a page doesn't depend on
+// having already fetched the one before it, so pages can be requested concurrently instead of one
+// at a time. A page past the real end just comes back `{ HasMoreResults: false, Results: [] }`
+// (confirmed against the live API, not assumed), so speculatively requesting a batch of pages
+// before knowing exactly where the data ends is safe — worst case a few of the last batch's
+// requests are wasted. This is what makes hydrate() usable on large accounts (M1-T05 perf
+// follow-up): a sequential loop over e.g. 15 pages of 500 contacts each took minutes on a real
+// account; four pages in flight at once cuts that roughly 4x.
+const PAGE_FETCH_CONCURRENCY = 4
+
+async function fetchAllPages<T>(
+  fetchPage: (page: number) => Promise<{ Results: T[]; HasMoreResults: boolean }>
+): Promise<T[]> {
+  const all: T[] = []
+  let nextPage = 1
+  let done = false
+  while (!done) {
+    const batchPages = Array.from({ length: PAGE_FETCH_CONCURRENCY }, (_, i) => nextPage + i)
+    const batchResults = await Promise.all(batchPages.map(fetchPage))
+    for (const result of batchResults) {
+      all.push(...result.Results)
+      if (!result.HasMoreResults) {
+        done = true
+        break // any further pages already in flight in this batch are past the end — ignore them
+      }
+    }
+    nextPage += PAGE_FETCH_CONCURRENCY
+  }
+  return all
+}
+
 // ── Types (LACRM v2 shapes — see account.lessannoyingcrm.com/api_docs/v2) ──
 
 export interface LacrmEmail { Text: string; Type?: string }
@@ -139,18 +171,11 @@ export async function searchLacrmContacts(term: string, page = 1): Promise<Lacrm
   )
 }
 
-/** Pages through GetContacts until HasMoreResults is false. Used for the read-through hydrate — a
- *  single search() call only returns one page (up to 500 results by default). */
+/** Pages through GetContacts until HasMoreResults is false (concurrently, see fetchAllPages()).
+ *  Used for the read-through hydrate — a single search() call only returns one page (up to 500
+ *  results by default). */
 export async function getAllLacrmContacts(term = ''): Promise<LacrmContact[]> {
-  const all: LacrmContact[] = []
-  let page = 1
-  while (true) {
-    const result = await searchLacrmContacts(term, page)
-    all.push(...result.Results)
-    if (!result.HasMoreResults) break
-    page += 1
-  }
-  return all
+  return fetchAllPages(page => searchLacrmContacts(term, page))
 }
 
 export async function getLacrmContact(contactId: string): Promise<LacrmContact> {
@@ -185,17 +210,9 @@ async function getPipelineItemsPage(pipelineId: string, page: number): Promise<L
   )
 }
 
-/** Pages through GetPipelineItems for one pipeline until HasMoreResults is false. */
+/** Pages through GetPipelineItems for one pipeline until HasMoreResults is false (concurrently). */
 export async function getAllPipelineItems(pipelineId: string): Promise<LacrmPipelineItem[]> {
-  const all: LacrmPipelineItem[] = []
-  let page = 1
-  while (true) {
-    const result = await getPipelineItemsPage(pipelineId, page)
-    all.push(...result.Results)
-    if (!result.HasMoreResults) break
-    page += 1
-  }
-  return all
+  return fetchAllPages(page => getPipelineItemsPage(pipelineId, page))
 }
 
 export async function createPipelineItem(
@@ -239,18 +256,11 @@ async function getCustomFieldsPage(page: number): Promise<LacrmCustomFieldSearch
   return request<LacrmCustomFieldSearchResult>(`/api/lacrm/custom-fields?page=${page}`)
 }
 
-/** Pages through GetCustomFields (Contact record type) until HasMoreResults is false. Used to
- *  check which of SALESFORGE_CUSTOM_FIELDS already exist before bootstrap-creating the rest. */
+/** Pages through GetCustomFields (Contact record type) until HasMoreResults is false
+ *  (concurrently). Used to check which of SALESFORGE_CUSTOM_FIELDS already exist before
+ *  bootstrap-creating the rest. */
 export async function getCustomFields(): Promise<LacrmCustomField[]> {
-  const all: LacrmCustomField[] = []
-  let page = 1
-  while (true) {
-    const result = await getCustomFieldsPage(page)
-    all.push(...result.Results)
-    if (!result.HasMoreResults) break
-    page += 1
-  }
-  return all
+  return fetchAllPages(getCustomFieldsPage)
 }
 
 export async function createCustomField(input: LacrmCustomFieldInput): Promise<{ CustomFieldId: string }> {
@@ -279,18 +289,10 @@ async function getNotesPage(page: number): Promise<LacrmNoteSearchResult> {
 }
 
 /** Pages through GetNotes (whole account, no ContactId filter — there's no bulk
- *  per-contact notes endpoint) until HasMoreResults is false. Callers filter for
+ *  per-contact notes endpoint) until HasMoreResults is false (concurrently). Callers filter for
  *  SalesForge-authored call-log notes; see noteToCallLog() in lacrmMapping.ts. */
 export async function getAllNotes(): Promise<LacrmNote[]> {
-  const all: LacrmNote[] = []
-  let page = 1
-  while (true) {
-    const result = await getNotesPage(page)
-    all.push(...result.Results)
-    if (!result.HasMoreResults) break
-    page += 1
-  }
-  return all
+  return fetchAllPages(getNotesPage)
 }
 
 export async function createNote(

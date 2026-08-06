@@ -256,7 +256,6 @@ export function useLacrmStore(): AppStore {
     lastSyncedAt: null,
   }))
   const announce = useAnnounce()
-  const hydratedRef = useRef(false)
 
   // The confirmed sales pipeline (B-01) and each contact's current
   // PipelineItemId, once known — populated by hydrate(), consulted and
@@ -333,10 +332,19 @@ export function useLacrmStore(): AppStore {
     announce(`Error trying to ${verb}: ${message}`)
   }
 
-  // Read-through: populate leads + pipeline stage from LACRM once on mount.
+  // Read-through: populate leads + pipeline stage from LACRM once on mount. Deliberately no
+  // "already hydrated" ref guard around this — that pattern looks like it prevents a double
+  // fetch under StrictMode's dev-only double-invoke, but it does the opposite: the ref persists
+  // across StrictMode's mount→cleanup→remount, so it blocks the *second* (surviving) effect
+  // invocation from ever calling hydrate(), while the *first* invocation's hydrate() keeps
+  // running to completion and then silently discards its own results at every
+  // `if (cancelled) return` once its cleanup (from the phantom unmount) has already flipped
+  // `cancelled` to true. Net effect: every request fires, nothing is ever dispatched, forever —
+  // exactly the bug this comment is here so nobody reintroduces. The plain cancelled-closure
+  // pattern below is the React-recommended one and is StrictMode-safe on its own: the phantom
+  // first invocation's fetch is (harmlessly, dev-only) wasted, the second one completes and
+  // dispatches normally. Production builds don't double-invoke effects, so this costs nothing there.
   useEffect(() => {
-    if (hydratedRef.current) return
-    hydratedRef.current = true
     let cancelled = false
 
     async function hydrate() {
