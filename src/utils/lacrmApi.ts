@@ -90,6 +90,12 @@ interface LacrmSalesforgeCustomFields {
   'SalesForge Annual Revenue'?: number
   'SalesForge Industry'?: string
   'SalesForge Deal Value'?: number
+  // M1-T06 (D-26) — Watchlist sync. Dropdown, not Checkbox: LACRM's Checkbox
+  // type is a multi-select-style field (an Options array with an undocumented
+  // return shape), while Dropdown's plain-string in/out is already proven by
+  // CF_STATUS_OVERRIDE above. 'Yes'/'No' over a real boolean for the same reason.
+  'SalesForge Pinned'?: string
+  'SalesForge Pinned Note'?: string
 }
 
 // LACRM's Contacts API uses literal space-containing keys for a few fields.

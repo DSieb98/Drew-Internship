@@ -21,10 +21,12 @@ Both blockers are now resolved:
 | **T03** | Lead records + pipeline stage sync | REQ-04 core + REQ-09 | T02 | — (B-01 resolved) |
 | **T04** | Extended-state sync | REQ-04 expanded: hot-alert, call history, scores | T02, T03 | Done 2026-08-04 — nurture deferred to M2 (D-24), see `M1-T04-extended-state-sync.md` |
 | **T05** | Conflict resolution & "LACRM wins" handling | PRINCIPLE-01 | T02–T04 | Done 2026-08-04, see `M1-T05-conflict-resolution.md` |
-| **T06** | Watchlist sync decision + implementation | M0-T07 pins/notes: LACRM sync vs. device-local | T02 | Drew's decision (open blocker 4) |
+| **T06** | Watchlist sync decision + implementation | M0-T07 pins/notes: LACRM sync vs. device-local | T02 | Done 2026-08-07 — Drew decided sync to LACRM (D-26), see `M1-T06-watchlist-sync-decision.md` |
 
 **Tight coupling note:** T03 and T04 both depend on T02's store swap being in place. T05's conflict-handling should be designed alongside T03/T04 rather than bolted on afterward, since retry/error paths touch the same sync code those tasks write.
 
 ## What "done" means for M1
 
-When all tasks pass their acceptance criteria, LACRM is the durable, authoritative store for every category PRINCIPLE-01 names that actually exists yet — lead records, pipeline stages, scores, hot alert status, call history — the M0 in-memory store is fully retired, and Tim's daily workflow survives a page reload or a switch to a different device without data loss. Nurture state is the one exception (D-24): no nurture engine exists in the app yet to make durable, so that piece of PRINCIPLE-01 carries into M2, which builds the engine and closes it there.
+When all tasks pass their acceptance criteria, LACRM is the durable, authoritative store for every category PRINCIPLE-01 names that actually exists yet — lead records, pipeline stages, scores, hot alert status, call history, Watchlist pins/notes — the M0 in-memory store is fully retired, and Tim's daily workflow survives a page reload or a switch to a different device without data loss. Nurture state is the one exception (D-24): no nurture engine exists in the app yet to make durable, so that piece of PRINCIPLE-01 carries into M2, which builds the engine and closes it there.
+
+**M1 is now complete** (all six tasks done as of 2026-08-07) — M2 (pipeline/nurture persistence) is next.

@@ -3,11 +3,11 @@
  * Full category-by-category decision writeup: docs/specs/M1/M1-T01-lacrm-client-mapping.md,
  * M1-T03-lead-stage-sync.md, and M1-T04-extended-state-sync.md.
  *
- * This module covers Contact field mapping (native + T04's custom fields),
- * pipeline stage-name reconciliation, and call-log ↔ Note conversion — all
- * wired end-to-end. Nurture-sequence state stays out of scope (D-24 — no
- * nurture engine exists yet to sync; deferred to M2, which builds one).
- * Watchlist pin/note sync is T06's call, not this file's.
+ * This module covers Contact field mapping (native + T04's custom fields,
+ * T06's pin/note fields), pipeline stage-name reconciliation, and call-log ↔
+ * Note conversion — all wired end-to-end. Nurture-sequence state stays out
+ * of scope (D-24 — no nurture engine exists yet to sync; deferred to M2,
+ * which builds one).
  */
 
 import type { CallLog, Lead, ScoreCriterionResult } from '../store/types'
@@ -29,6 +29,8 @@ export const CF_EMPLOYEES = 'SalesForge Employees' as const
 export const CF_ANNUAL_REVENUE = 'SalesForge Annual Revenue' as const
 export const CF_INDUSTRY = 'SalesForge Industry' as const
 export const CF_DEAL_VALUE = 'SalesForge Deal Value' as const
+export const CF_PINNED = 'SalesForge Pinned' as const
+export const CF_PINNED_NOTE = 'SalesForge Pinned Note' as const
 
 export interface SalesforgeCustomFieldSpec {
   Name: string
@@ -46,6 +48,12 @@ export const SALESFORGE_CUSTOM_FIELDS: SalesforgeCustomFieldSpec[] = [
   { Name: CF_ANNUAL_REVENUE, Type: 'Currency' },
   { Name: CF_INDUSTRY, Type: 'Text' },
   { Name: CF_DEAL_VALUE, Type: 'Currency' },
+  // M1-T06 (D-26) — Watchlist pin/note now syncs to LACRM. Dropdown 'Yes'/'No'
+  // rather than LACRM's Checkbox type: Checkbox is really a multi-select-style
+  // field with an undocumented value shape, where Dropdown's plain string
+  // in/out is already proven working by CF_STATUS_OVERRIDE above.
+  { Name: CF_PINNED, Type: 'Dropdown', Options: ['Yes', 'No'] },
+  { Name: CF_PINNED_NOTE, Type: 'TextArea' },
 ]
 
 function encodeScoreBreakdown(breakdown: ScoreCriterionResult[]): string {
@@ -88,6 +96,11 @@ export function leadToLacrmContactInput(lead: Lead): LacrmContactInput {
   if (lead.annualRevenue != null) input[CF_ANNUAL_REVENUE] = lead.annualRevenue
   if (lead.industry) input[CF_INDUSTRY] = lead.industry
 
+  // M1-T06 (D-26) — always written (like score above) so pin state is never
+  // ambiguous between "not pinned" and "not yet synced."
+  input[CF_PINNED] = lead.pinned ? 'Yes' : 'No'
+  input[CF_PINNED_NOTE] = lead.pinnedNote
+
   return input
 }
 
@@ -113,6 +126,8 @@ export function lacrmContactToLeadPatch(contact: LacrmContact): Partial<Lead> {
   patch.employees = typeof contact[CF_EMPLOYEES] === 'number' ? contact[CF_EMPLOYEES] : null
   patch.annualRevenue = typeof contact[CF_ANNUAL_REVENUE] === 'number' ? contact[CF_ANNUAL_REVENUE] : null
   patch.industry = contact[CF_INDUSTRY] || null
+  patch.pinned = contact[CF_PINNED] === 'Yes'
+  patch.pinnedNote = contact[CF_PINNED_NOTE] ?? ''
 
   return patch
 }
@@ -261,8 +276,3 @@ export function selectSalesPipeline(pipelines: LacrmPipeline[]): LacrmPipeline |
 // - Nurture-sequence state: no nurture engine exists yet (NurturePage is
 //   still M0's placeholder) — nothing real to sync. Deferred to M2, which
 //   scopes building the engine and resolving B-03 together.
-// - pinned / pinnedNote (Watchlist) → explicitly NOT decided here; owned by
-//   M1-T06 (open blocker 4 — LACRM-synced vs. device-local scratchpad).
-//   Scoring criteria that key off pinnedNote (S-05/06/07/08) stay slightly
-//   stale across a reload until T06 lands — see applyScoring() in
-//   lacrmStore.ts for how the persisted score/breakdown route around that.

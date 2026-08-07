@@ -4,19 +4,17 @@
  * Fulfils the same async AppStore contract as M0's useInMemoryStore, so no
  * consuming component changes. Leads, pipeline stage, scoring inputs
  * (score/statusOverride/employees/annualRevenue/industry/dealValue — as
- * custom fields, T04) and call history (as Notes, T04) all read-through
- * from LACRM on mount and write-through on create/edit.
- *
- * `pinned`/`pinnedNote` (Watchlist) and `Settings` stay local-only — the
- * former is M1-T06's call to make, the latter isn't an LACRM concept.
+ * custom fields, T04), Watchlist pin state (pinned/pinnedNote — as custom
+ * fields, T06/D-26) and call history (as Notes, T04) all read-through from
+ * LACRM on mount and write-through on create/edit. `Settings` stays
+ * local-only — it isn't an LACRM concept.
  *
  * Score persistence (D-24): the score total and its per-criterion breakdown
  * are *stored* (not purely recomputed on read) so a reload restores the
- * exact last-known-accurate value. That matters because one scoring input —
- * pinnedNote (S-05/06/07/08) — has no LACRM home until T06, so a naive
- * recompute-on-hydrate would silently drop those points every session. Local
- * edits still recompute live via applyScoring() and push the fresh result
- * back to LACRM, same as M0 — only the *read* path trusts the stored value.
+ * exact last-known-accurate value, rather than depending on every scoring
+ * input already being present and correct at hydrate time. Local edits still
+ * recompute live via applyScoring() and push the fresh result back to LACRM,
+ * same as M0 — only the *read* path trusts the stored value.
  */
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react'
 import {
@@ -93,6 +91,7 @@ const DEFAULT_SETTINGS: Settings = {
 const LACRM_MAPPED_FIELDS = [
   'contactName', 'company', 'email', 'phone', 'city', 'state', 'jobTitle',
   'employees', 'annualRevenue', 'industry', 'dealValue', 'statusOverride',
+  'pinned', 'pinnedNote',
 ] as const
 
 function touchesLacrmFields(patch: Partial<Lead>): boolean {
@@ -110,12 +109,13 @@ function applyScoring(lead: Lead, settings: Settings): Lead {
   }
 }
 
-// Fills in `stage` (filled in separately once pipeline items are known) and
-// `pinned`/`pinnedNote` (M1-T06's call, still local-only) with M0-equivalent
-// defaults. Everything else — including score/status — comes straight from
-// the synced custom fields via lacrmContactToLeadPatch(), not recomputed;
-// see the module comment for why. `called`/`lastContactDate` are filled in
-// by the caller from synced call-log Notes, same as `stage`.
+// Fills in `stage` (filled in separately once pipeline items are known) —
+// stage isn't a Contact field, it's resolved from pipeline items by the
+// caller. Everything else — including score/status and now pinned/pinnedNote
+// (T06/D-26) — comes straight from the synced custom fields via
+// lacrmContactToLeadPatch(), not recomputed; see the module comment for why.
+// `called`/`lastContactDate` are filled in by the caller from synced
+// call-log Notes, same as `stage`.
 function contactToLead(contact: LacrmContact, settings: Settings): Lead {
   const patch = lacrmContactToLeadPatch(contact)
   const score = patch.score ?? 0
@@ -135,8 +135,8 @@ function contactToLead(contact: LacrmContact, settings: Settings): Lead {
     scoreBreakdown: patch.scoreBreakdown ?? [],
     status: statusOverride ?? deriveStatus(score, settings),
     statusOverride,
-    pinned: false,
-    pinnedNote: '',
+    pinned: patch.pinned ?? false,
+    pinnedNote: patch.pinnedNote ?? '',
     called: false,
     lastContactDate: null,
     employees: patch.employees ?? null,

@@ -1,5 +1,17 @@
 # M1-T06 — Watchlist sync decision + implementation
 
+> **Resolved 2026-08-07 (D-26).** Drew decided pins/private notes **sync to LACRM**
+> (consistent with PRINCIPLE-01), not device-local. Implemented as two more LACRM
+> Contact custom fields (`SalesForge Pinned` — Dropdown Yes/No, `SalesForge Pinned
+> Note` — TextArea), bootstrapped via the same `ensureSalesforgeCustomFields()` path
+> as T04's fields, read/written through `lacrmContactToLeadPatch()` /
+> `leadToLacrmContactInput()` in `src/utils/lacrmMapping.ts`, and folded into
+> `LACRM_MAPPED_FIELDS` in `src/store/lacrmStore.ts` so `updateLead()`'s existing
+> write-through/retry/revert-on-failure path (T05) covers them with no new code path.
+> No UI changes were needed — `MyListPage.tsx`, `LeadCard.tsx`, and `useTogglePin.ts`
+> already called `store.updateLead()`, which now syncs these fields the same as any
+> other. See D-26 in `CLAUDE.md` for the full writeup.
+
 **Goal:** Resolve whether the Watchlist / "My List" (M0-T07) pins and private notes sync to LACRM or remain device-local, then implement whichever is decided.
 
 **Depends on:** T02.
