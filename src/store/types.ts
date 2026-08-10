@@ -17,6 +17,17 @@ export interface ScoreCriterionResult {
   earnedPoints: number
 }
 
+// ── Nurture (M3-T01) ────────────────────────────────────────────────────────
+
+export type NurtureTouchStatus = 'pending' | 'done' | 'skipped'
+
+export interface NurtureTouch {
+  step: number                    // 0-3, index into NURTURE_TOUCH_PLAN (src/nurture/nurturePlan.ts)
+  status: NurtureTouchStatus
+  draftText: string               // AI-drafted, Tim-editable
+  completedAt: string | null      // ISO 8601 date, set when status becomes 'done' or 'skipped'
+}
+
 // ── Lead ──────────────────────────────────────────────────────────────────────
 
 export interface Lead {
@@ -50,6 +61,12 @@ export interface Lead {
   annualRevenue: number | null
   industry: string | null
   jobTitle: string | null
+  // Nurture (M3-T01, closes B-03). Active nurture = nurtureEnrolled && !nurtureArchived &&
+  // status === 'Cold' (computed, not a separate flag — see nurturePlan.ts's isActiveInNurture()).
+  nurtureEnrolled: boolean
+  nurtureEnrolledAt: string | null   // ISO 8601 date; touch due-dates are computed from this
+  nurtureTouches: NurtureTouch[]     // length 4 once enrolled, [] otherwise
+  nurtureArchived: boolean
   // Housekeeping
   importedAt: string              // ISO 8601 date-time
 }

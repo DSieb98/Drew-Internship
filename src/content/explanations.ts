@@ -74,6 +74,11 @@ export const EXPLANATIONS: Explanation[] = [
     term: 'Pipeline qualification cutoff',
     text: 'Leads scoring at or above this number are considered qualified for the main pipeline. Set to 0, every imported lead qualifies. Adjust it on the Settings page.',
   },
+  {
+    id: 'nurture-sequence',
+    term: 'Nurture sequence',
+    text: 'A 4-touch check-in plan (a Day 0 email, a Day 7 call, a Day 21 email, and a Day 35 call) for Cold leads that have gone quiet. Each touch gets an AI-drafted starting point you edit and mark done yourself — nothing sends automatically. If a lead\'s score improves, it moves back to the main pipeline on its own.',
+  },
 ]
 
 export const EXPLANATIONS_BY_ID: Record<string, Explanation> =

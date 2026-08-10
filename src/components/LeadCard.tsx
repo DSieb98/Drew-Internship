@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import type { Lead, Settings } from '../store/types'
 import { getTZInfo } from '../utils/tz'
+import { isGoneQuiet } from '../utils/leadActivity'
 
 interface LeadCardProps {
   lead: Lead
@@ -14,13 +15,6 @@ function dealValueLabel(value: number, settings: Settings): 'High' | 'Medium' | 
   if (value >= settings.dealHighThreshold) return 'High'
   if (value >= settings.dealMediumThreshold) return 'Medium'
   return 'Low'
-}
-
-function isGoneQuiet(lead: Lead, silenceDays: number, now: Date): boolean {
-  const refStr = lead.lastContactDate ?? lead.importedAt.split('T')[0]
-  const ref = new Date(refStr + 'T00:00:00')
-  const daysDiff = (now.getTime() - ref.getTime()) / (1000 * 60 * 60 * 24)
-  return daysDiff >= silenceDays
 }
 
 export default function LeadCard({ lead, settings, now = new Date(), onOpen, onTogglePin }: LeadCardProps) {

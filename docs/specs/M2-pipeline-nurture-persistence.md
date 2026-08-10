@@ -1,5 +1,11 @@
 # M2 — Pipeline Tracking + Nurture Persistence (REQ-09, REQ-10)
 
+> **Numbering note (2026-08-10):** REQ-09 (pipeline stages) was absorbed into M1-T03 early. REQ-10
+> (nurture persistence, B-03) was not built then despite M1-T04 saying "M2 builds the engine" —
+> the `docs/specs/M2/` folder was later rescoped to Clay enrichment instead (old-M3's content).
+> REQ-10 is built as `docs/specs/M3/` (see that folder's numbering note for the full story), not
+> as a "M2" folder of its own. This file's REQ-10 content is still the accurate source spec.
+
 **Goal:** Make pipeline stages match LACRM exactly and make the cold-lead nurture sequence durable
 (it currently resets on reload) — both backed by the LACRM sync built in M1.
 

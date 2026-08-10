@@ -5,16 +5,12 @@ import { useTogglePin } from '../hooks/useTogglePin'
 import LeadCard from '../components/LeadCard'
 import LeadDrawer from '../components/LeadDrawer'
 import ExplainTerm from '../components/ExplainTerm'
+import { isGoneQuiet } from '../utils/leadActivity'
 import type { Lead } from '../store/types'
 
 function daysSince(dateStr: string, now: Date): number {
   const ref = new Date(dateStr + (dateStr.includes('T') ? '' : 'T00:00:00'))
   return (now.getTime() - ref.getTime()) / (1000 * 60 * 60 * 24)
-}
-
-function isGoneQuiet(lead: Lead, silenceDays: number, now: Date): boolean {
-  const refStr = lead.lastContactDate ?? lead.importedAt.split('T')[0]
-  return daysSince(refStr, now) >= silenceDays
 }
 
 export default function TodayPage() {

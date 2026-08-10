@@ -96,6 +96,12 @@ interface LacrmSalesforgeCustomFields {
   // CF_STATUS_OVERRIDE above. 'Yes'/'No' over a real boolean for the same reason.
   'SalesForge Pinned'?: string
   'SalesForge Pinned Note'?: string
+  // M3-T01 — nurture engine (closes B-03). 'SalesForge Nurture Enrolled At' is Text (an ISO
+  // date string), not LACRM's 'Date' type — see lacrmMapping.ts for why.
+  'SalesForge Nurture Enrolled'?: string
+  'SalesForge Nurture Enrolled At'?: string
+  'SalesForge Nurture Touches'?: string
+  'SalesForge Nurture Archived'?: string
 }
 
 // LACRM's Contacts API uses literal space-containing keys for a few fields.

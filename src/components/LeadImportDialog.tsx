@@ -57,6 +57,10 @@ function rowToLead(row: Record<string, string>, mapping: Record<string, string |
     annualRevenue:   getNum('annualRevenue'),
     industry:        get('industry') || null,
     jobTitle:        get('jobTitle') || null,
+    nurtureEnrolled:   false,
+    nurtureEnrolledAt: null,
+    nurtureTouches:    [],
+    nurtureArchived:   false,
     importedAt:      new Date().toISOString(),
   }
 }

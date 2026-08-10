@@ -5,9 +5,11 @@
  * consuming component changes. Leads, pipeline stage, scoring inputs
  * (score/statusOverride/employees/annualRevenue/industry/dealValue — as
  * custom fields, T04), Watchlist pin state (pinned/pinnedNote — as custom
- * fields, T06/D-26) and call history (as Notes, T04) all read-through from
- * LACRM on mount and write-through on create/edit. `Settings` stays
- * local-only — it isn't an LACRM concept.
+ * fields, T06/D-26), nurture state (nurtureEnrolled/nurtureEnrolledAt/
+ * nurtureTouches/nurtureArchived — as custom fields, M3-T01) and call
+ * history (as Notes, T04) all read-through from LACRM on mount and
+ * write-through on create/edit. `Settings` stays local-only — it isn't an
+ * LACRM concept.
  *
  * Score persistence (D-24): the score total and its per-criterion breakdown
  * are *stored* (not purely recomputed on read) so a reload restores the
@@ -92,6 +94,8 @@ const LACRM_MAPPED_FIELDS = [
   'contactName', 'company', 'email', 'phone', 'city', 'state', 'jobTitle',
   'employees', 'annualRevenue', 'industry', 'dealValue', 'statusOverride',
   'pinned', 'pinnedNote',
+  // M3-T01 — nurture state (closes B-03).
+  'nurtureEnrolled', 'nurtureEnrolledAt', 'nurtureTouches', 'nurtureArchived',
 ] as const
 
 function touchesLacrmFields(patch: Partial<Lead>): boolean {
@@ -143,6 +147,10 @@ function contactToLead(contact: LacrmContact, settings: Settings): Lead {
     annualRevenue: patch.annualRevenue ?? null,
     industry: patch.industry ?? null,
     jobTitle: patch.jobTitle ?? null,
+    nurtureEnrolled: patch.nurtureEnrolled ?? false,
+    nurtureEnrolledAt: patch.nurtureEnrolledAt ?? null,
+    nurtureTouches: patch.nurtureTouches ?? [],
+    nurtureArchived: patch.nurtureArchived ?? false,
     importedAt: new Date().toISOString(),
   }
 }

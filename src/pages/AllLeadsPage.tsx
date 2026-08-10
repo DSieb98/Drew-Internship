@@ -6,6 +6,7 @@ import LeadImportDialog from '../components/LeadImportDialog'
 import LeadCard from '../components/LeadCard'
 import LeadDrawer from '../components/LeadDrawer'
 import ExplainTerm from '../components/ExplainTerm'
+import { isGoneQuiet } from '../utils/leadActivity'
 import type { Lead } from '../store/types'
 
 type Filter = 'all' | 'call-today' | 'follow-up' | 'gone-quiet'
@@ -15,12 +16,6 @@ const FILTER_LABELS: Record<Filter, string> = {
   'call-today': 'Call Today',
   'follow-up': 'Follow-Up',
   'gone-quiet': 'Gone Quiet',
-}
-
-function isGoneQuiet(lead: Lead, silenceDays: number, now: Date): boolean {
-  const refStr = lead.lastContactDate ?? lead.importedAt.split('T')[0]
-  const ref = new Date(refStr + (refStr.includes('T') ? '' : 'T00:00:00'))
-  return (now.getTime() - ref.getTime()) / (1000 * 60 * 60 * 24) >= silenceDays
 }
 
 export default function AllLeadsPage() {

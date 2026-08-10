@@ -1,6 +1,8 @@
 # M2 — Clay.com Enrichment: task breakdown
 
-This folder splits milestone **M2** into discrete tasks. M2 covers **REQ-02 (AI Lead Enrichment)** only — the single Phase 2 item from Spec v1.2 §9 not already absorbed into M1. (REQ-09 stage tracking and REQ-10 nurture persistence, also nominally "Phase 2" in the spec's phase table, were already built into M1-T03 and M1-T04 respectively — M2 does not re-cover them.)
+This folder splits milestone **M2** into discrete tasks. M2 covers **REQ-02 (AI Lead Enrichment)** only — the single Phase 2 item from Spec v1.2 §9 not already absorbed into M1.
+
+> **Correction (2026-08-10):** the line originally here claimed REQ-09 and REQ-10 were "already built into M1-T03 and M1-T04 respectively." That's only true for REQ-09 (pipeline stages, M1-T03). **REQ-10 (nurture persistence) was not built** — M1-T04 explicitly deferred it ("B-03 stays open; M2 builds the engine and closes it there"), and this folder's rescoping to Clay enrichment (confirmed with Drew, this same session) silently dropped that promise instead of carrying it forward. REQ-10/B-03 is now built as `docs/specs/M3/` — see that folder's numbering note for the full history. This folder's own scope (Clay/Make.com enrichment) is unaffected and unchanged.
 
 Every task inherits the project-wide constraints (PRINCIPLE-01/02/03, plain-language UX, PII rules) and the rule that **how** to build is Claude Code's call where a task is Claude Code's to build at all. Not every M2 task is a Claude Code task — see the "Owner" column below.
 

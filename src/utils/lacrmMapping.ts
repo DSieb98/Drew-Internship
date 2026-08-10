@@ -4,13 +4,11 @@
  * M1-T03-lead-stage-sync.md, and M1-T04-extended-state-sync.md.
  *
  * This module covers Contact field mapping (native + T04's custom fields,
- * T06's pin/note fields), pipeline stage-name reconciliation, and call-log ↔
- * Note conversion — all wired end-to-end. Nurture-sequence state stays out
- * of scope (D-24 — no nurture engine exists yet to sync; deferred to M2,
- * which builds one).
+ * T06's pin/note fields, M3-T01's nurture fields), pipeline stage-name
+ * reconciliation, and call-log ↔ Note conversion — all wired end-to-end.
  */
 
-import type { CallLog, Lead, ScoreCriterionResult } from '../store/types'
+import type { CallLog, Lead, NurtureTouch, ScoreCriterionResult } from '../store/types'
 import type { LacrmContact, LacrmContactInput, LacrmNote, LacrmPipeline } from './lacrmApi'
 
 // ── Custom fields (M1-T04 — score/status-override/scoring-input sync) ────
@@ -31,6 +29,14 @@ export const CF_INDUSTRY = 'SalesForge Industry' as const
 export const CF_DEAL_VALUE = 'SalesForge Deal Value' as const
 export const CF_PINNED = 'SalesForge Pinned' as const
 export const CF_PINNED_NOTE = 'SalesForge Pinned Note' as const
+// M3-T01 — nurture engine (closes B-03). CF_NURTURE_ENROLLED_AT stores an ISO date as plain Text
+// rather than LACRM's 'Date' custom-field type — no prior field in this app has used 'Date' yet
+// (lastContactDate derives from call-log Notes, not a custom field), so Text keeps this on the
+// same proven, tested-live in/out shape as every other synced field instead of an unverified one.
+export const CF_NURTURE_ENROLLED = 'SalesForge Nurture Enrolled' as const
+export const CF_NURTURE_ENROLLED_AT = 'SalesForge Nurture Enrolled At' as const
+export const CF_NURTURE_TOUCHES = 'SalesForge Nurture Touches' as const
+export const CF_NURTURE_ARCHIVED = 'SalesForge Nurture Archived' as const
 
 export interface SalesforgeCustomFieldSpec {
   Name: string
@@ -54,6 +60,11 @@ export const SALESFORGE_CUSTOM_FIELDS: SalesforgeCustomFieldSpec[] = [
   // in/out is already proven working by CF_STATUS_OVERRIDE above.
   { Name: CF_PINNED, Type: 'Dropdown', Options: ['Yes', 'No'] },
   { Name: CF_PINNED_NOTE, Type: 'TextArea' },
+  // M3-T01 — nurture engine.
+  { Name: CF_NURTURE_ENROLLED, Type: 'Dropdown', Options: ['Yes', 'No'] },
+  { Name: CF_NURTURE_ENROLLED_AT, Type: 'Text' },
+  { Name: CF_NURTURE_TOUCHES, Type: 'TextArea' },
+  { Name: CF_NURTURE_ARCHIVED, Type: 'Dropdown', Options: ['Yes', 'No'] },
 ]
 
 function encodeScoreBreakdown(breakdown: ScoreCriterionResult[]): string {
@@ -61,6 +72,21 @@ function encodeScoreBreakdown(breakdown: ScoreCriterionResult[]): string {
 }
 
 function decodeScoreBreakdown(raw: string | undefined): ScoreCriterionResult[] {
+  if (!raw) return []
+  try {
+    const parsed = JSON.parse(raw)
+    return Array.isArray(parsed) ? parsed : []
+  } catch {
+    return []
+  }
+}
+
+// M3-T01 — nurture touches, same JSON-in-TextArea shape as scoreBreakdown above.
+function encodeNurtureTouches(touches: NurtureTouch[]): string {
+  return JSON.stringify(touches)
+}
+
+function decodeNurtureTouches(raw: string | undefined): NurtureTouch[] {
   if (!raw) return []
   try {
     const parsed = JSON.parse(raw)
@@ -101,6 +127,12 @@ export function leadToLacrmContactInput(lead: Lead): LacrmContactInput {
   input[CF_PINNED] = lead.pinned ? 'Yes' : 'No'
   input[CF_PINNED_NOTE] = lead.pinnedNote
 
+  // M3-T01 — nurture state, always written for the same reason as pin state above.
+  input[CF_NURTURE_ENROLLED] = lead.nurtureEnrolled ? 'Yes' : 'No'
+  input[CF_NURTURE_ENROLLED_AT] = lead.nurtureEnrolledAt ?? ''
+  input[CF_NURTURE_TOUCHES] = encodeNurtureTouches(lead.nurtureTouches)
+  input[CF_NURTURE_ARCHIVED] = lead.nurtureArchived ? 'Yes' : 'No'
+
   return input
 }
 
@@ -128,6 +160,11 @@ export function lacrmContactToLeadPatch(contact: LacrmContact): Partial<Lead> {
   patch.industry = contact[CF_INDUSTRY] || null
   patch.pinned = contact[CF_PINNED] === 'Yes'
   patch.pinnedNote = contact[CF_PINNED_NOTE] ?? ''
+
+  patch.nurtureEnrolled = contact[CF_NURTURE_ENROLLED] === 'Yes'
+  patch.nurtureEnrolledAt = contact[CF_NURTURE_ENROLLED_AT] || null
+  patch.nurtureTouches = decodeNurtureTouches(contact[CF_NURTURE_TOUCHES])
+  patch.nurtureArchived = contact[CF_NURTURE_ARCHIVED] === 'Yes'
 
   return patch
 }
@@ -273,6 +310,7 @@ export function selectSalesPipeline(pipelines: LacrmPipeline[]): LacrmPipeline |
 //   both of those now sync (status via score, dealValue via CF_DEAL_VALUE),
 //   so the alert is already consistent across reload/devices without extra
 //   storage. hotAlertMinDealValue itself stays a device-local Setting.
-// - Nurture-sequence state: no nurture engine exists yet (NurturePage is
-//   still M0's placeholder) — nothing real to sync. Deferred to M2, which
-//   scopes building the engine and resolving B-03 together.
+// - Nurture-sequence state: built in M3-T01 (see CF_NURTURE_* above) —
+//   this note stays as a record that it was deferred here, not silently
+//   forgotten (see docs/specs/M3/M3-00-index.md for the full history of
+//   how that deferral almost got lost).

@@ -1503,3 +1503,99 @@ circle.usa-map-pin { stroke: #ffffff; stroke-width: 1; }
   gap: 10px;
   margin-top: 8px;
 }
+
+/* ── M3-T01: Nurture ──────────────────────────────────────────── */
+.nurture-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 760px;
+}
+
+.nurture-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 14px 18px;
+}
+
+.nurture-item-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.nurture-item-company {
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.nurture-item-contact {
+  color: #475569;
+  font-size: 0.9375rem;
+}
+
+.nurture-item-meta {
+  color: #64748b;
+  font-size: 0.8125rem;
+}
+
+.nurture-archived-details {
+  margin-top: 8px;
+}
+
+.nurture-dialog-content {
+  max-width: 560px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.nurture-progress {
+  list-style: none;
+  margin: 0 0 18px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.nurture-step {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 14px;
+  border-radius: 6px;
+  font-size: 0.875rem;
+}
+
+.nurture-step-label { color: #334155; }
+.nurture-step-status {
+  font-weight: 600;
+  font-size: 0.8125rem;
+}
+
+.nurture-step--pending  { background: #f8fafc; color: #94a3b8; }
+.nurture-step--current  { background: #fffbeb; border: 1px solid #fbbf24; }
+.nurture-step--done     { background: #f0fdf4; }
+.nurture-step--done .nurture-step-status     { color: #15803d; }
+.nurture-step--skipped  { background: #f8fafc; }
+.nurture-step--skipped .nurture-step-status  { color: #94a3b8; }
+.nurture-step--current .nurture-step-status  { color: #b45309; }
+
+.nurture-complete {
+  padding: 12px 0;
+}
+.nurture-complete p {
+  margin: 0 0 14px;
+  color: #334155;
+}
+
+.nurture-touch-actions { margin-top: 16px; }
