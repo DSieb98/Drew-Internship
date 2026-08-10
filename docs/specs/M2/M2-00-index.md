@@ -28,6 +28,8 @@ M2 cannot start until:
 
 Clay.com's free tier is 100 Data Credits + 500 Actions/month — at an estimated 3–20 credits per fully-enriched lead, that's roughly **5–30 leads/month**, not the 25–50/month qualified-lead figure in Spec v1.2's business goal. M2 as scoped here builds correctly against the free tier and stays cost-safe (T00a), but if real enrichment volume needs to scale past that, upgrading Clay is a separate decision for Drew to make later — not assumed here.
 
+**Confirmed 2026-08-10 (T00 testing):** actual observed cost is 8–13 credits/lead (Ford vs. Visit Dallas), landing at the **low end** of the estimate — ~7–8 leads/month, not the middle/high end. Driver: Claygent (used for Has Marketing Dept / Has Events, no structured Clay field exists for either) costs *more* on obscure leads than famous ones, since it needs more research steps. T00a's guard should size against the observed 13-credit worst case. See `M2-T00-clay-account-field-schema.md` for full detail.
+
 ## What "done" means for M2
 
 When all tasks pass their acceptance criteria: every lead has Clay.com-sourced industry, revenue, buying-signal, order-frequency, and employee-count data flowing automatically into LACRM after intake and before scoring; the scoring engine's REQ-03 criteria (Employees, Revenue $25M+, Has Marketing Dept, Has Events, Ordered Promo Products, Orders Multiple Times/Year) read from that real data instead of the `dealValue` proxy or notes-field keyword inference; and a failed enrichment is visibly flagged and retried rather than silently scoring a lead on stale placeholder data.
