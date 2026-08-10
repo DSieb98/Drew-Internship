@@ -152,7 +152,34 @@ account (the same one M1-T02's 21,209-contact live-verification hit) the first t
 runs against it — same mechanism T04/T06 already used for their own fields, but flagged here since
 it's a real, outward-facing change to a live account, not just a code change.
 
-**Verification:** `npm run typecheck` and the full `vitest` suite pass. **Not yet verified against
-the live LACRM account** — unlike M1-T02's fix, this session had no opportunity to run the app
-against real production data; the new custom fields' actual creation and round-trip is unverified
-until that happens.
+**Verified against the live LACRM account (2026-08-10), Playwright-driven end to end:** enroll →
+AI-generate a real draft → edit → mark done → **reload → touch progress persisted correctly
+(the actual B-03 check)** → mark/skip through all 4 touches → sequence-complete panel → Promote
+to Warm (confirmed the lead's card genuinely shows Warm on All Leads, not just within Nurture) →
+graduated-section auto-detection → archive → confirmed under the Archived list → restore →
+confirmed back in Active. Zero console errors throughout. `npm run typecheck` and the full
+`vitest` suite pass.
+
+**Three pre-existing, unrelated bugs were found and fixed while verifying** (see D-27a/b/c in
+CLAUDE.md for the full writeup) — none were in this task's own diff, but all three blocked
+verification or silently broke already-shipped sync:
+1. `ensureSalesforgeCustomFields()`'s bootstrap loop had no per-field error handling, so one
+   rejected field silently blocked every field after it in the array.
+2. `SALESFORGE_CUSTOM_FIELDS`'s two `Currency`-type fields (`CF_ANNUAL_REVENUE`, `CF_DEAL_VALUE`,
+   both from M1-T04) were missing LACRM's required `CurrencyDisplaySettings` parameter — meaning
+   those two fields, plus everything after them in the array (Industry, Pinned, Pinned Note, and
+   this task's 4 nurture fields), had **never actually been created** in the live account since
+   M1-T04, despite being marked done.
+3. `contactToLead()` set `Lead.importedAt` to `new Date().toISOString()` — "now" — on every single
+   hydrate, so the "gone quiet" fallback (used whenever `lastContactDate` is null, which is true
+   for virtually every real lead) could never fire against real data. Fixed by mapping LACRM's
+   real `DateCreated` field instead.
+
+**Known follow-up, not fixed this session:** with (2) and (3) both fixed, "gone quiet" now
+correctly flags the vast majority of this 21,212-contact account (21,194 leads) — which means
+NurturePage's "Ready to Enroll" list (and AllLeadsPage's existing "Gone Quiet" filter) renders
+that many `<li>` items completely unpaginated. Functionally correct, confirmed working, but not
+performant at this scale — needs pagination/virtualization as a follow-up, surfaced not silently
+left. Also noted: there's no "archive mid-sequence" control (Archive only appears once all 4
+touches are done/skipped) — Tim can't pull a lead out of active nurture early without completing
+the sequence; worth a follow-up if that turns out to matter in practice.

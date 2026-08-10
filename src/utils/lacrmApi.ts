@@ -116,6 +116,10 @@ export interface LacrmContact extends LacrmSalesforgeCustomFields {
   'Company Name'?: string
   'Job Title'?: string
   'Background Info'?: string
+  // ISO 8601 date-time the contact was created in LACRM (confirmed against the public v2 docs).
+  // Used as Lead.importedAt's real value on hydrate — see lacrmStore.ts's contactToLead() for why
+  // this matters: it must NOT be "now," or every "gone quiet" check silently breaks.
+  DateCreated?: string
 }
 
 // CreateContact/EditContact take Name as a single string; GetContact returns
@@ -262,6 +266,14 @@ export interface LacrmCustomFieldInput {
   Name: string
   Type: string
   Options?: string[]
+  // Required by LACRM's real API for Type: 'Currency' — see lacrmMapping.ts's
+  // SalesforgeCurrencyDisplaySettings for why this exists (array of one object, not a plain object).
+  CurrencyDisplaySettings?: [{
+    CurrencyType: string
+    CurrencySymbol: string
+    NumberOfDecimalPlaces: number
+    SymbolPlacement: string
+  }]
 }
 
 async function getCustomFieldsPage(page: number): Promise<LacrmCustomFieldSearchResult> {

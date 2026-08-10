@@ -151,7 +151,13 @@ function contactToLead(contact: LacrmContact, settings: Settings): Lead {
     nurtureEnrolledAt: patch.nurtureEnrolledAt ?? null,
     nurtureTouches: patch.nurtureTouches ?? [],
     nurtureArchived: patch.nurtureArchived ?? false,
-    importedAt: new Date().toISOString(),
+    // Found 2026-08-10 verifying M3-T01 against the live account: this was unconditionally
+    // `new Date().toISOString()` — "now," on every single hydrate. isGoneQuiet() (leadActivity.ts)
+    // falls back to importedAt when lastContactDate is null (true for effectively every real
+    // lead, since call-logging through this app is new) — resetting it to "now" on every load
+    // meant no lead could *ever* register as gone-quiet against real data, silently, since M1-T04.
+    // LACRM's real DateCreated is the correct, stable value.
+    importedAt: contact.DateCreated ?? new Date().toISOString(),
   }
 }
 
@@ -239,8 +245,17 @@ async function ensureSalesforgeCustomFields(): Promise<void> {
     const existing = await getCustomFields()
     const existingNames = new Set(existing.map(f => f.Name))
     const missing = SALESFORGE_CUSTOM_FIELDS.filter(f => !existingNames.has(f.Name))
+    // Each field's create is independent — a single bad/rejected spec (found 2026-08-10: the
+    // Currency-type fields were missing a required LACRM parameter, see lacrmMapping.ts) must
+    // not silently block every field *after* it in the array. That's exactly what happened here
+    // for 4+ days before it was caught: Annual Revenue failed, so Industry/Deal Value/Pinned/
+    // Pinned Note/all 4 nurture fields never even got attempted.
     for (const field of missing) {
-      await createCustomField(field)
+      try {
+        await createCustomField(field)
+      } catch {
+        // Swallowed per-field, same rationale as the outer catch below.
+      }
     }
   } catch {
     // Swallowed — see comment above.

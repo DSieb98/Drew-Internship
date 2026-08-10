@@ -38,11 +38,34 @@ export const CF_NURTURE_ENROLLED_AT = 'SalesForge Nurture Enrolled At' as const
 export const CF_NURTURE_TOUCHES = 'SalesForge Nurture Touches' as const
 export const CF_NURTURE_ARCHIVED = 'SalesForge Nurture Archived' as const
 
+export interface SalesforgeCurrencyDisplaySettings {
+  CurrencyType: string
+  CurrencySymbol: string
+  NumberOfDecimalPlaces: number
+  SymbolPlacement: string
+}
+
 export interface SalesforgeCustomFieldSpec {
   Name: string
   Type: string
   Options?: string[]
+  // Required by LACRM's real CreateCustomField API for Type: 'Currency' fields (confirmed
+  // against the public v2 docs, not guessed) — found 2026-08-10 while verifying M3-T01 against
+  // the live account: CF_ANNUAL_REVENUE/CF_DEAL_VALUE never actually got created because this
+  // was missing, and every field *after* them in this array (Industry, Pinned, Pinned Note, and
+  // all 4 nurture fields) silently never got attempted either — see the loop-resilience fix in
+  // ensureSalesforgeCustomFields() (lacrmStore.ts) for the other half of this bug. Array of one
+  // object, not a plain object — matches the array shape LACRM echoes back on every field in
+  // GetCustomFields responses (a plain object was tried first and rejected with a 400 too).
+  CurrencyDisplaySettings?: [SalesforgeCurrencyDisplaySettings]
 }
+
+const USD_DISPLAY: [SalesforgeCurrencyDisplaySettings] = [{
+  CurrencyType: '$',
+  CurrencySymbol: '$',
+  NumberOfDecimalPlaces: 2,
+  SymbolPlacement: 'LeftNoSpace',
+}]
 
 /** Bootstrap spec for ensureSalesforgeCustomFields() (lacrmStore.ts) — created once per
  *  account, on first hydrate, if not already present. RecordType defaults to Contact. */
@@ -51,9 +74,9 @@ export const SALESFORGE_CUSTOM_FIELDS: SalesforgeCustomFieldSpec[] = [
   { Name: CF_SCORE_BREAKDOWN, Type: 'TextArea' },
   { Name: CF_STATUS_OVERRIDE, Type: 'Dropdown', Options: ['Hot', 'Warm', 'Cold'] },
   { Name: CF_EMPLOYEES, Type: 'Number' },
-  { Name: CF_ANNUAL_REVENUE, Type: 'Currency' },
+  { Name: CF_ANNUAL_REVENUE, Type: 'Currency', CurrencyDisplaySettings: USD_DISPLAY },
   { Name: CF_INDUSTRY, Type: 'Text' },
-  { Name: CF_DEAL_VALUE, Type: 'Currency' },
+  { Name: CF_DEAL_VALUE, Type: 'Currency', CurrencyDisplaySettings: USD_DISPLAY },
   // M1-T06 (D-26) — Watchlist pin/note now syncs to LACRM. Dropdown 'Yes'/'No'
   // rather than LACRM's Checkbox type: Checkbox is really a multi-select-style
   // field with an undocumented value shape, where Dropdown's plain string
