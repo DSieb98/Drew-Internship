@@ -25,6 +25,31 @@ Note that with Instantly deferred (M4), some candidate metrics (e.g., "emails se
 rate") may not have a real data source yet — confirm which metrics are actually measurable from
 LACRM data before committing to them.
 
+### B-06 discussion prep (for Drew's conversation with Tim, added 2026-08-10)
+
+**The defining question, ask first, open-ended:** "What do you wish you could see about your
+pipeline that you *can't* already get from Today/All Leads/My List/Nurture/Map inside SalesForge
+right now?" — that gap, not a pre-made metrics list, is what M5 should fill. Don't lead with the
+candidate table below; use it only to sanity-check what he comes back with.
+
+**Candidate metrics from the spec — measurable today vs. not:**
+
+| Metric | Measurable now from LACRM data? | Open question for Tim |
+| :-- | :-- | :-- |
+| Leads qualified (count/rate) | Yes — `status`/`statusOverride`, pipeline stage | Window (weekly/monthly)? "Qualified" = Hot, or reaching a specific stage? |
+| Sample boxes sent | Yes — pipeline has a "Sample Box Sent" stage | Just a count over time, or also time-in-stage? |
+| Cost per lead | Partial — Clay/Make.com/Anthropic spend is trackable, but M2 enrichment isn't live yet | Does Tim actually want $/lead, or is that more a Drew/Greg metric? |
+| Alerts triggered | Yes — hot-alert derives live from `status`/`dealValue`, already computed | History of past alerts, or is the live dashboard alert (M0) already enough? |
+| Emails sent | No real data source — Instantly deferred (M4), draft tab has no send tracking | Drop unless M4 is revived |
+| Response rate | No — same reason (depended on Instantly) | Drop unless M4 is revived |
+
+**Other framing questions that shape the build, not just the metric list:**
+- Time range: month-snapshot, or trend-over-time? Trend needs point-in-time history stored
+  somewhere — LACRM itself doesn't retain history, so this affects scope/PRINCIPLE-01.
+- Audience: this report for Tim alone, or does Greg see it too (spec's wording says "Greg and
+  Tim") — they may want different things.
+- Format: one fixed monthly summary, or does he want to filter/drill down?
+
 ## In scope (once B-06 is settled)
 
 - A monthly summary view covering the metrics confirmed with Tim that are measurable from
