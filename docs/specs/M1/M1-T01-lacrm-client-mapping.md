@@ -82,10 +82,7 @@ through the Worker (D-21) — never call LACRM directly from the browser.
   `GetNotesAttachedToContact`). Documented, not implemented — T04.
 - **Watchlist pins/notes** → explicitly **not** decided here; owned by T06 (open blocker 4).
 
-**Not yet verified against a live account:** Drew hasn't pulled LACRM API credentials yet (needs
-to catch up with Tim on whose login to use — see `worker/README.md` step 3). Everything above
-typechecks and builds, and the request/response shapes match LACRM's public v2 docs exactly, but
-the acceptance criterion "the client can read and write a real lead record to/from LACRM
-successfully" is unverified against a real account until those credentials exist and a live smoke
-test is run (the Settings page's "Test LACRM connection" button, built in T00, is that smoke
-test).
+**Verified against a live account (2026-08-06).** Credentials were pulled and the acceptance
+criterion "the client can read and write a real lead record to/from LACRM successfully" is
+confirmed: the concurrent-pagination fix (see `M1-T02-async-store-swap.md`) round-tripped the
+real production account — 21,209 contacts, full hydrate in ~31s through the deployed Worker.

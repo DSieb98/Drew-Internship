@@ -83,9 +83,10 @@ rather than guessed, since there were no live LACRM credentials to confirm the r
 names. T03 fetched LACRM's actual public API docs and confirmed `Page`/`MaxNumberOfResults`;
 `getAllLacrmContacts()` in `lacrmApi.ts` now pages through fully. See M1-T03's own writeup.
 
-**Not verified against a live account**, same caveat as T01 — no LACRM credentials pulled yet.
-`npm run typecheck` and `npm run build` both pass; the unconfigured-`VITE_WORKER_URL` path was
-traced end-to-end (throws synchronously in `lacrmApi.ts`'s `request()`, caught by `hydrate()`,
-surfaces as the new error state, no crash, no other console errors) but not visually confirmed in
-a browser in this session — no headless-browser tooling was available in this Windows
-environment to drive one.
+**Verified against a live account 2026-08-06** (see the concurrent-pagination/StrictMode fix,
+commit `437a231`) — full hydrate against the real production account (21,209 contacts) completes
+in ~31s through the deployed Worker. That fix also caught and resolved a real dev-mode bug this
+task's original build had missed: a `hydratedRef` guard meant to stop a double-fetch under React
+18 StrictMode instead discarded every successfully-fetched result, leaving local dev stuck on
+"Loading leads..." forever (production builds, which don't double-invoke effects, were never
+affected). Fixed by relying on the standard cancelled-closure pattern instead of the ref.

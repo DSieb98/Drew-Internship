@@ -65,9 +65,12 @@ access; purpose-built endpoints limit the blast radius to exactly what the app d
 - `worker/` — a Cloudflare Worker (TypeScript) with:
   - `POST /api/anthropic/chat` — `{ prompt }` → `{ text }`, forwards to Anthropic with
     `ANTHROPIC_API_KEY` attached server-side.
-  - `GET /api/lacrm/ping` — calls LACRM's `GetUserInfo` function with `LACRM_USER_CODE` +
-    `LACRM_API_TOKEN` attached server-side; proves the credential mechanism works end-to-end for
-    LACRM ahead of T01's full field mapping (out of scope here, per "Out of scope" above).
+  - `GET /api/lacrm/ping` — calls LACRM's `GetUserInfo` function with a single `LACRM_API_KEY`
+    attached server-side; proves the credential mechanism works end-to-end for LACRM ahead of
+    T01's full field mapping (out of scope here, per "Out of scope" above). **Corrected in T01:**
+    the `LACRM_USER_CODE`/`LACRM_API_TOKEN` pair originally planned here (a reverse-engineered
+    guess) was replaced by a single `LACRM_API_KEY` once LACRM's real public v2 API docs turned
+    out to be reachable — see `M1-T01-lacrm-client-mapping.md`'s "Decision & what was built."
   - CORS restricted to the GitHub Pages origin + local dev ports.
   - Errors from unreachable/failing upstreams return a clear JSON error (never a raw stack trace
     or silent failure) so the app can announce it via `useAnnounce()` — satisfies the
@@ -81,9 +84,8 @@ access; purpose-built endpoints limit the blast radius to exactly what the app d
   `CLOUDFLARE_API_TOKEN` repo secret. The app's existing Pages workflow reads a `WORKER_URL`
   repo **variable** (not secret — it's just a public URL) into `VITE_WORKER_URL` at build time.
 
-**What still needs Drew (cannot be done by Claude Code — requires account access):** creating the
-free Cloudflare account, running `wrangler login`, generating the LACRM UserCode/APIToken from
-LACRM account settings, and setting the three Worker secrets + two GitHub repo values. Full
-step-by-step in `worker/README.md`. Until that one-time setup is done, the AI assistant and the
-new "Test LACRM connection" button will show a clear "not configured" error rather than fail
-silently.
+**Account setup — done.** Drew's one-time Cloudflare/LACRM credential setup (`worker/README.md`)
+is complete and the mechanism is verified live, not just typechecked: the 2026-08-06 hydrate fix
+(see `M1-T02-async-store-swap.md`) confirms a full round-trip against the real production LACRM
+account (21,209 contacts) through the deployed Worker. The Worker is live at
+`salesforge-api.salesforge.workers.dev`.
