@@ -1,4 +1,11 @@
-# M3-T01 — Nurture touch engine (data model, LACRM sync, UI)
+# M7-T01 — Nurture touch engine (data model, LACRM sync, UI)
+
+> **Renumbered 2026-08-10:** this was originally filed as M3-T01. Drew reactivated the *original*
+> M3 (Instantly.ai email automation, REQ-05/06) and its folder now holds that content instead —
+> see `docs/specs/M3/M3-00-index.md`'s reactivation note. This spec documents real, already-shipped
+> code (commits `2f85924`/`8305bdd`, D-27/D-27a/b/c in `CLAUDE.md`), so rather than let it be lost
+> to the M3 folder's repurposing, it moved here as M7 (next open milestone number) with references
+> updated accordingly. No code changed — this is a docs-only move.
 
 **Goal:** Replace `NurturePage`'s M0 placeholder with a real 4-touch nurture engine — Cold leads
 that have gone quiet can be enrolled, each touch is AI-drafted and Tim-editable, progress persists
@@ -80,7 +87,7 @@ no send infrastructure, so it can't, and that's stated rather than silently punt
 ## References
 
 - Spec v1.2: REQ-10, B-03
-- `docs/specs/M3/M3-00-index.md` — numbering note (why this is "M3" and not old-M2)
+- `docs/specs/M7/M7-00-index.md` — numbering note (why this moved from M3 to M7)
 - `docs/specs/M1/M1-T04-extended-state-sync.md` — where B-03 was deferred from (D-24)
 - `src/components/LeadDrawer.tsx` — existing AI-draft/edit/copy pattern this task reuses
 - `src/utils/claudeApi.ts`, `docs/specs/M1/M1-T00-credential-architecture.md` — AI infrastructure

@@ -1,69 +1,30 @@
-# M3 — Nurture Engine: task breakdown
+# M3 — Email Automation (Instantly.ai): task breakdown
 
-This folder splits milestone **M3** into discrete tasks. M3 covers **REQ-10 (Nurture Sequence)**
-— the 4-touch nurture engine, its LACRM-backed persistence, and closing open blocker **B-03**.
+This folder splits milestone **M3** into discrete tasks. M3 covers **REQ-05 (Email Sequence — the still-deferred automated-send half)** and **REQ-06 (Qualification Response Capture)** — the two requirements fully owned by Spec v1.2's Phase 3. (REQ-07's push-alert half also nominally sits in Phase 3, but that piece is declined per D-09/B-05 and stays out of scope here — its UI half was already built under Phase 1.)
 
-## Numbering note — read this first
+## Reactivation note (Aug 2026)
 
-The milestone numbers in this repo do not match the original top-level plan documents 1:1, and
-this folder is the reason why. Recorded here so a future session doesn't have to re-derive it:
+M3 was retired earlier this session on the basis that Instantly.ai was "deferred indefinitely and removed from the active roadmap." Drew has since asked to un-retire it and build REQ-05/REQ-06 anyway. Flagging for the record:
 
-- The **original** top-level plan (`docs/specs/M2-pipeline-nurture-persistence.md` /
-  `M3-enrichment-automation.md`) had **M2 = pipeline stages + nurture persistence** and
-  **M3 = Clay.com enrichment + Make.com orchestration**.
-- **M1-T03** absorbed the pipeline-stage half of old-M2 (REQ-09) early, as a byproduct of B-01
-  landing during M1. That part of old-M2 is done and was never rebuilt as a separate folder.
-- The **nurture-persistence half of old-M2 (REQ-10, B-03) was not built.** M1-T04's own writeup
-  says so explicitly: *"B-03 stays open; M2 builds the engine and closes it there."* Somewhere in
-  an Aug 2026 rescoping (confirmed with Drew, referenced in `docs/specs/M2/M2-00-index.md`), the
-  `docs/specs/M2/` folder was pointed at old-M3's content (Clay enrichment) instead, and picked up
-  an incorrect note claiming REQ-10 was "already built into M1-T04" — it wasn't. That
-  rescoping is real (Drew confirmed it, and `docs/specs/M2/` is genuinely mid-flight against Clay)
-  but it silently orphaned the nurture-engine milestone rather than renumbering it.
-- **This folder (`docs/specs/M3/`) is that orphaned milestone**, filed under the number Drew used
-  for it when asking for it directly (2026-08-10) rather than reopened under "M2" (already taken)
-  or left permanently unnumbered. Scope is old-M2's REQ-10 content — nothing from old-M3's Clay
-  content, which stays exactly where `docs/specs/M2/` already has it.
-
-**Practical effect: there is no scope collision.** `docs/specs/M2/` = Clay/Make.com enrichment
-(blocked on Drew's T00a threshold sign-off). `docs/specs/M3/` (this folder) = the nurture engine
-(unblocked, buildable now — no Drew dependency).
-
-## Why this milestone exists
-
-REQ-10 needs somewhere real for nurture state to live, and a real touch-approval UI — today
-`NurturePage` is still M0's bare "coming later" placeholder, and B-03 (nurture persistence) has
-been open since before M1. LACRM sync (M1) and the AI-drafting infrastructure (M1-T00's Worker,
-already used by `LeadDrawer`'s call-opener/next-steps/email-draft tabs) are both already built —
-this milestone's job is the nurture-specific data model, persistence, and UI on top of them.
+- **D-03** (Greg, Apr 2026 — email automation tool = Instantly.ai) was never formally rescinded. The "deferred indefinitely" language was a status note, not a decision reversal, so this isn't overriding a locked decision — it's resuming deferred work.
+- Nothing about the underlying blockers has changed. REQ-05's automated-send piece and REQ-06 both still require the same client-side credential problem M1-T00 was scoped to solve (a static GitHub Pages site holding secrets for authenticated API calls) — now for Instantly.ai's API, not just LACRM's.
+- Recommend this gets a line in the next `PROFORMA-STATE` update (something like: *"M3 reactivated — Instantly.ai REQ-05/06 back in scope, D-03 stands"*) so a future session doesn't hit the same "wait, didn't we kill this?" confusion this session just had.
 
 ## Build order
 
-| Task | Name | Covers | Depends on |
-| :-- | :-- | :-- | :-- |
-| **T01** | Nurture touch engine (data model, LACRM sync, UI) | REQ-10, B-03 | M1 (LACRM sync) |
-
-Sized as a single task rather than split further — the data model, sync, and UI are tightly
-coupled enough (same `Lead` fields, same custom-field encode/decode, same page) that splitting
-them would mean passing an unstable shape between tasks for no real benefit. See
-`M3-T01-nurture-engine.md` for the full spec and the "Decision & what was built" writeup.
+| Task | Name | Covers | Depends on | Owner |
+| :-- | :-- | :-- | :-- | :-- |
+| **T00** | Instantly.ai account & credential architecture | Account setup + how a static site authenticates to Instantly.ai's API without exposing secrets | M1-T00 (credential architecture spike — same underlying problem) | Drew |
+| **T01** | Automated send integration | Wire the existing AI draft tab (already built: draft + mailto/clipboard) to Instantly.ai's actual 3-email automated sequence | T00 | Claude Code (SalesForge side) + Drew (Instantly.ai config) |
+| **T02** | Reply/response capture | Capture buyer signals from email replies — role, purchase history, upcoming events, sample box interest | T00, T01 | Drew (Instantly.ai webhook/polling config) + Claude Code (consuming the data) |
+| **T03** | LACRM write-back for email activity | Sent emails, replies, and captured signals land in LACRM per PRINCIPLE-01 | T01, T02, M1-T01/T03 | Drew + Claude Code (boundary task, same pattern as M2-T02) |
 
 ## What "done" means for M3
 
-A Cold lead that's gone quiet (past `Settings.nurtureSilenceDays`) can be enrolled in the 4-touch
-nurture sequence from the Nurture page; each touch shows an AI-drafted, editable draft Tim
-approves, edits, or skips; progress persists across reload and devices via LACRM (closing B-03);
-a lead whose score/status improves out of Cold is no longer treated as active nurture without any
-extra step; and Tim can promote a nurtured lead to Warm with one action that actually changes its
-real status everywhere (not a UI-only toggle — there's no legacy `promoteModal` bug in this
-rebuild since nothing like it existed here to begin with, but the fix this task's acceptance
-criteria implicitly requires — "promoting changes real status everywhere" — is built correctly
-from the start).
+Every lead's 3-email sequence (Introduction, Qualification, Sample Box offer) sends automatically through Instantly.ai instead of requiring Tim to manually mailto/copy-paste; replies are parsed for the four buyer signals REQ-06 specifies; and all of it — sends, replies, captured signals — lands in LACRM as the durable record, not just in Instantly.ai's own dashboard or SalesForge's in-memory state.
 
 ## References
 
-- Spec v1.2: REQ-10, B-03
-- `docs/specs/M2-pipeline-nurture-persistence.md` — original spec content this folder implements
-- `docs/specs/M1/M1-T04-extended-state-sync.md` — where B-03 was deferred from
-- `docs/specs/M2/M2-00-index.md` — where the rescoping/orphaning happened (see its own note,
-  cross-referenced from here)
+- Spec v1.2: REQ-05, REQ-06, D-03, PRINCIPLE-01
+- M1-T00 (credential architecture — direct dependency)
+- M2-00-index.md (same boundary-task and write-back pattern reused here for T03)
