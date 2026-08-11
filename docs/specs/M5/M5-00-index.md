@@ -23,14 +23,13 @@ REQ-11's approved-scope metrics (Spec v1.2 §3) are: **emails sent, response rat
 qualified, alerts triggered, boxes sent, cost per lead.**
 
 Two of those six — **emails sent** and **response rate** — were scoped assuming Instantly.ai
-(REQ-05/06) would be live. T00a below was drafted when Instantly.ai was deferred indefinitely, so
-its working assumption was "no data source, decide drop/proxy/placeholder." **That assumption is
-now stale**: Drew reactivated Instantly.ai the same day, scoped as `docs/specs/M3/` (D-28) —
-`M3-T03-lacrm-writeback.md` is specifically building sequence-sent/reply-received data into LACRM.
-T00a's decision should be revisited against that before Tim's session (T00) runs, rather than
-telling Tim these two metrics are permanently unavailable when M3 may deliver them. Flagged here
-rather than silently updated, since T00a's scope decision is Drew's call (D-14), not Claude
-Code's to re-resolve unilaterally.
+(REQ-05/06) would be live. Instantly.ai (M3) was briefly reactivated 2026-08-10, then put back to
+deferred 2026-08-11 after Drew talked it through with his mentor (see `CLAUDE.md` D-28) — so
+T00a's original working assumption (**"no data source, decide drop/proxy/placeholder"**) is
+accurate again as of now. Worth remembering it's not necessarily *permanent*: D-28 explicitly
+left the door open to revisit M3 later, and `M3-T03-lacrm-writeback.md`'s draft spec is what would
+eventually supply this data if that happens. Tim's gap-analysis session (T00) should treat these
+two metrics as currently unavailable, not permanently impossible.
 
 ## Build order
 

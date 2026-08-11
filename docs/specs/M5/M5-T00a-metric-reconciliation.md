@@ -6,12 +6,12 @@
 
 **Owner:** Drew (scope decision). Not a Claude Code task — this is a decision about what REQ-11 should even measure, which belongs to Drew per D-14 (decision authority).
 
-> **Revisit before running T00:** this task was originally drafted while Instantly.ai was deferred
-> indefinitely, so its scope below assumes "no data source, decide drop/proxy/placeholder." Drew
-> reactivated Instantly.ai the same day as REQ-05/06, scoped as `docs/specs/M3/` (D-28) —
-> `M3-T03-lacrm-writeback.md` specifically targets getting sequence-sent/reply-received data into
-> LACRM. Emails-sent/response-rate may not be permanently sourceless after all — re-check against
-> M3's actual progress before finalizing this decision or running Tim's session (T00). See
+> **Status as of 2026-08-11:** this task's scope below (assume "no data source, decide
+> drop/proxy/placeholder") is accurate again. Instantly.ai/M3 was briefly reactivated 2026-08-10,
+> then put back to deferred the next day after Drew talked it through with his mentor (`CLAUDE.md`
+> D-28) — the door was explicitly left open to revisit M3 later, and `M3-T03-lacrm-writeback.md`'s
+> draft spec is what would eventually supply this data if that happens. Proceed with the
+> drop/proxy/placeholder decision below; just don't present it to Tim as permanent. See
 > `docs/specs/M5/M5-00-index.md`'s scope-problem note.
 
 ## In scope
@@ -20,7 +20,7 @@
   - Drop the metric entirely from REQ-11's scope, since there's no automated send/reply-capture to measure it from.
   - Replace it with a manual/proxy equivalent — e.g., if Tim logs outreach manually in LACRM (activity notes, call logs), whether that data is countable as a rough substitute.
   - Leave it as a placeholder metric that shows "N/A — requires Instantly.ai" (or, now, "pending M3") in the eventual dashboard (T02), rather than silently omitting it — consistent with the project's "deferred features appear as visible placeholders, not silent omissions" pattern.
-  - **New option, since M3's reactivation:** treat this as blocked-on-M3 rather than blocked-forever — revisit once `M3-T03` (LACRM write-back for email activity) actually lands real data.
+  - Treat this as blocked-on-M3 rather than blocked-forever — revisit if/when M3 (currently deferred, D-28) is ever un-paused and `M3-T03` (LACRM write-back for email activity) actually lands real data.
 - Documenting the decision and updating REQ-11's metric list so **T00 (Tim's gap-analysis session)** and **T01 (data source mapping)** work from a current list, not the stale June 2026 one in Spec v1.2.
 - A brief note on whether this reconciliation should also prompt an update to Spec v1.2 itself (a versioning decision, not this task's scope to execute — just to flag).
 
