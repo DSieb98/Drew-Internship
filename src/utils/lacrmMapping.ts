@@ -7,15 +7,16 @@
  * T06's pin/note fields, M3-T01's nurture fields), pipeline stage-name
  * reconciliation, and call-log ↔ Note conversion — all wired end-to-end.
  *
- * NOTE (D-32, 2026-08-12): the app was renamed SalesForge → SynetheixSales, but the CF_* custom
- * field names below and CALL_LOG_NOTE_MARKER deliberately still say "SalesForge" — they're the
- * literal keys already live on the real 21,212-contact LACRM account. Renaming these string
- * values without a live data migration would make the app stop recognizing its own previously-
- * synced fields/notes (ensureSalesforgeCustomFields() matches by exact name; a changed name means
- * "not found" → it creates duplicates instead, orphaning every already-synced value). No live
- * LACRM credentials are available to run that migration safely from a dev environment, and these
- * are private per-account field labels Tim/Drew only ever see inside LACRM's own settings, not in
- * this app's UI — so they're out of scope for the rename until a deliberate migration is planned.
+ * NOTE (D-32/D-33, 2026-08-12): the 13 CF_* custom field names below and CALL_LOG_NOTE_MARKER
+ * were migrated live (via a one-time script calling LACRM's EditCustomField/EditNote, run through
+ * temporary Worker routes since removed) — each field renamed in place by CustomFieldId, so no
+ * data was lost or duplicated. Gotcha found live: EditCustomField treats an omitted
+ * Options/CurrencyDisplaySettings as "clear it," not "leave unchanged" (same class of surprise as
+ * D-27b's Currency-field bug) — the migration re-sent each field's existing Options (with their
+ * OptionIds preserved) and CurrencyDisplaySettings alongside the new Name to avoid wiping them.
+ * Verified live: 0 existing "SalesForge Call Log" notes existed to migrate (call logging hadn't
+ * been used in production yet), and real contact data reads correctly under the new field names
+ * post-migration. See CLAUDE.md D-33.
  */
 
 import type { CallLog, Lead, NurtureTouch, ScoreCriterionResult } from '../store/types'
@@ -30,23 +31,23 @@ import type { LacrmContact, LacrmContactInput, LacrmNote, LacrmPipeline } from '
 // those names — lacrmApi.ts's LacrmContact/LacrmContactInput interfaces
 // declare the matching literal keys and must be kept in sync by hand if
 // renamed here.
-export const CF_SCORE = 'SalesForge Score' as const
-export const CF_SCORE_BREAKDOWN = 'SalesForge Score Breakdown' as const
-export const CF_STATUS_OVERRIDE = 'SalesForge Status Override' as const
-export const CF_EMPLOYEES = 'SalesForge Employees' as const
-export const CF_ANNUAL_REVENUE = 'SalesForge Annual Revenue' as const
-export const CF_INDUSTRY = 'SalesForge Industry' as const
-export const CF_DEAL_VALUE = 'SalesForge Deal Value' as const
-export const CF_PINNED = 'SalesForge Pinned' as const
-export const CF_PINNED_NOTE = 'SalesForge Pinned Note' as const
+export const CF_SCORE = 'SynetheixSales Score' as const
+export const CF_SCORE_BREAKDOWN = 'SynetheixSales Score Breakdown' as const
+export const CF_STATUS_OVERRIDE = 'SynetheixSales Status Override' as const
+export const CF_EMPLOYEES = 'SynetheixSales Employees' as const
+export const CF_ANNUAL_REVENUE = 'SynetheixSales Annual Revenue' as const
+export const CF_INDUSTRY = 'SynetheixSales Industry' as const
+export const CF_DEAL_VALUE = 'SynetheixSales Deal Value' as const
+export const CF_PINNED = 'SynetheixSales Pinned' as const
+export const CF_PINNED_NOTE = 'SynetheixSales Pinned Note' as const
 // M3-T01 — nurture engine (closes B-03). CF_NURTURE_ENROLLED_AT stores an ISO date as plain Text
 // rather than LACRM's 'Date' custom-field type — no prior field in this app has used 'Date' yet
 // (lastContactDate derives from call-log Notes, not a custom field), so Text keeps this on the
 // same proven, tested-live in/out shape as every other synced field instead of an unverified one.
-export const CF_NURTURE_ENROLLED = 'SalesForge Nurture Enrolled' as const
-export const CF_NURTURE_ENROLLED_AT = 'SalesForge Nurture Enrolled At' as const
-export const CF_NURTURE_TOUCHES = 'SalesForge Nurture Touches' as const
-export const CF_NURTURE_ARCHIVED = 'SalesForge Nurture Archived' as const
+export const CF_NURTURE_ENROLLED = 'SynetheixSales Nurture Enrolled' as const
+export const CF_NURTURE_ENROLLED_AT = 'SynetheixSales Nurture Enrolled At' as const
+export const CF_NURTURE_TOUCHES = 'SynetheixSales Nurture Touches' as const
+export const CF_NURTURE_ARCHIVED = 'SynetheixSales Nurture Archived' as const
 
 export interface SalesforgeCurrencyDisplaySettings {
   CurrencyType: string
@@ -206,12 +207,12 @@ export function lacrmContactToLeadPatch(contact: LacrmContact): Partial<Lead> {
 //
 // LACRM has no per-record "call log" concept, so each CallLog is written as
 // one Note (CreateNote) attached to the contact, marked with a recognizable
-// first line so hydrate can tell SalesForge-authored call logs apart from
+// first line so hydrate can tell SynetheixSales-authored call logs apart from
 // any other note a user enters directly in LACRM (which this app doesn't
 // model and leaves untouched). CallLog.id becomes the Note's NoteId — a
 // real, durable, cross-device id instead of the old client-generated one.
 
-const CALL_LOG_NOTE_MARKER = 'SalesForge Call Log'
+const CALL_LOG_NOTE_MARKER = 'SynetheixSales Call Log'
 
 export function callLogToNoteText(log: Omit<CallLog, 'id'>): string {
   return `${CALL_LOG_NOTE_MARKER}\n${JSON.stringify({
@@ -222,7 +223,7 @@ export function callLogToNoteText(log: Omit<CallLog, 'id'>): string {
   })}`
 }
 
-/** Returns null for any note that isn't a SalesForge call-log note (wrong marker,
+/** Returns null for any note that isn't a SynetheixSales call-log note (wrong marker,
  *  or malformed) — callers filter those out rather than treating them as an error. */
 export function noteToCallLog(note: LacrmNote): CallLog | null {
   const newlineIdx = note.Note.indexOf('\n')
@@ -257,7 +258,7 @@ export function noteToCallLog(note: LacrmNote): CallLog | null {
 //
 // Ambiguities resolved here explicitly (not guessed) — flag to Drew if wrong:
 //   - New Lead / Contacted → no LACRM stage. These are pre-qualification,
-//     SalesForge-only states (REQ-04 only creates the CRM record at
+//     SynetheixSales-only states (REQ-04 only creates the CRM record at
 //     "Qualified"). Mapped to `null`: sync the Contact record itself
 //     (PRINCIPLE-01 still wants it durable), but don't place it in the
 //     pipeline yet.

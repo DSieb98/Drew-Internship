@@ -83,25 +83,25 @@ export interface LacrmAddress {
 // must match the CF_* constants in lacrmMapping.ts exactly — that file owns
 // the canonical names and the CreateCustomField bootstrap spec.
 interface LacrmSalesforgeCustomFields {
-  'SalesForge Score'?: number
-  'SalesForge Score Breakdown'?: string
-  'SalesForge Status Override'?: string
-  'SalesForge Employees'?: number
-  'SalesForge Annual Revenue'?: number
-  'SalesForge Industry'?: string
-  'SalesForge Deal Value'?: number
+  'SynetheixSales Score'?: number
+  'SynetheixSales Score Breakdown'?: string
+  'SynetheixSales Status Override'?: string
+  'SynetheixSales Employees'?: number
+  'SynetheixSales Annual Revenue'?: number
+  'SynetheixSales Industry'?: string
+  'SynetheixSales Deal Value'?: number
   // M1-T06 (D-26) — Watchlist sync. Dropdown, not Checkbox: LACRM's Checkbox
   // type is a multi-select-style field (an Options array with an undocumented
   // return shape), while Dropdown's plain-string in/out is already proven by
   // CF_STATUS_OVERRIDE above. 'Yes'/'No' over a real boolean for the same reason.
-  'SalesForge Pinned'?: string
-  'SalesForge Pinned Note'?: string
-  // M3-T01 — nurture engine (closes B-03). 'SalesForge Nurture Enrolled At' is Text (an ISO
+  'SynetheixSales Pinned'?: string
+  'SynetheixSales Pinned Note'?: string
+  // M3-T01 — nurture engine (closes B-03). 'SynetheixSales Nurture Enrolled At' is Text (an ISO
   // date string), not LACRM's 'Date' type — see lacrmMapping.ts for why.
-  'SalesForge Nurture Enrolled'?: string
-  'SalesForge Nurture Enrolled At'?: string
-  'SalesForge Nurture Touches'?: string
-  'SalesForge Nurture Archived'?: string
+  'SynetheixSales Nurture Enrolled'?: string
+  'SynetheixSales Nurture Enrolled At'?: string
+  'SynetheixSales Nurture Touches'?: string
+  'SynetheixSales Nurture Archived'?: string
 }
 
 // LACRM's Contacts API uses literal space-containing keys for a few fields.
