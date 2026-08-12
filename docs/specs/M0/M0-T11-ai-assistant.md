@@ -5,6 +5,10 @@
 > select one to navigate to it (opens on All Leads). This is local/deterministic matching against
 > already-loaded lead data, not an AI call, and it doesn't mutate any lead data — consistent with
 > this task's existing "answers; doesn't mutate data" scope line. See CLAUDE.md D-30.
+>
+> **Update 2026-08-12 (D-31):** extended the same search to city and state, including natural
+> phrases like "the guy from Dallas" or "someone from Texas" (not just the exact city name alone)
+> — Tim's next request. Still local/deterministic, no AI call. See CLAUDE.md D-31.
 
 **Goal:** Let Tim ask plain-English questions about his leads ("who should I call first?", "anyone
 gone quiet?", "write a follow-up for Ironclad") and get a useful, plain-language answer.

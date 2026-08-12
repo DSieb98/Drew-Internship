@@ -67,7 +67,7 @@ export const EXPLANATIONS: Explanation[] = [
   {
     id: 'ai-assistant',
     term: 'Ask your AI assistant',
-    text: 'Two things in one place: search by company or contact name to jump straight to a lead, or type a plain-English question — like "who should I call first?" — and get an answer based on real lead data. You choose how many leads (Hot only, Hot and Warm, or all) are included in each answer, so you control how much gets sent.',
+    text: 'Two things in one place: search by company, contact name, city, or state — even a phrase like "the guy from Dallas" — to jump straight to a lead, or type a plain-English question — like "who should I call first?" — and get an answer based on real lead data. You choose how many leads (Hot only, Hot and Warm, or all) are included in each answer, so you control how much gets sent.',
   },
   {
     id: 'pipeline-qualification',

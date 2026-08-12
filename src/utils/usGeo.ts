@@ -121,6 +121,19 @@ export function normalizeStateAbbr(state: string): string | null {
   return STATE_NAMES[withoutDots] ?? (STATE_CAPITALS[withoutDots] ? withoutDots : null)
 }
 
+// Reverse of STATE_NAMES (abbreviation → lowercase full name), first-listed name wins for
+// abbreviations with multiple aliases (e.g. DC). Used by lead search (leadSearch.ts) so typing
+// a full state name ("Texas") matches leads whose stored state is the abbreviation ("TX").
+const STATE_ABBR_TO_NAME: Record<string, string> = {}
+for (const [name, abbr] of Object.entries(STATE_NAMES)) {
+  if (!STATE_ABBR_TO_NAME[abbr]) STATE_ABBR_TO_NAME[abbr] = name.toLowerCase()
+}
+
+export function stateFullName(state: string): string | null {
+  const abbr = normalizeStateAbbr(state)
+  return abbr ? STATE_ABBR_TO_NAME[abbr] ?? null : null
+}
+
 export function geocodeLead(city: string, state: string): GeoResult | null {
   const abbr = normalizeStateAbbr(state)
   if (!abbr) return null

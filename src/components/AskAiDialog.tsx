@@ -55,7 +55,7 @@ export default function AskAiDialog({ open, onClose }: AskAiDialogProps) {
   const [error, setError] = useState('')
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const [findQuery, setFindQuery] = useState('')
-  const [findResults, setFindResults] = useState<Lead[] | null>(null)
+  const [findResults, setFindResults] = useState<{ matches: Lead[]; totalMatches: number } | null>(null)
   const [lastFindQuery, setLastFindQuery] = useState('')
 
   const activeScope = SCOPES.find(s => s.id === scope) ?? SCOPES[0]
@@ -84,9 +84,11 @@ export default function AskAiDialog({ open, onClose }: AskAiDialogProps) {
     setFindResults(results)
     setLastFindQuery(q)
     announce(
-      results.length === 0
+      results.totalMatches === 0
         ? `No leads found for "${q}".`
-        : `${results.length} ${results.length === 1 ? 'lead' : 'leads'} found for "${q}".`
+        : `${results.totalMatches} ${results.totalMatches === 1 ? 'lead' : 'leads'} found for "${q}".${
+            results.totalMatches > results.matches.length ? ` Showing the top ${results.matches.length}.` : ''
+          }`
     )
   }
 
@@ -157,7 +159,7 @@ Question: ${question.trim()}`
       <form onSubmit={handleFind} className="askai-find-form">
         <div className="settings-field">
           <label htmlFor="askai-find-query" className="settings-field-label">
-            Search by company or contact name
+            Search by company, contact name, city, or state
           </label>
           <div className="askai-find-row">
             <input
@@ -166,7 +168,7 @@ Question: ${question.trim()}`
               className="askai-find-input"
               value={findQuery}
               onChange={e => setFindQuery(e.target.value)}
-              placeholder="e.g. Acme Corp or Jane Smith"
+              placeholder="e.g. Acme Corp, Jane Smith, or the guy from Dallas"
             />
             <button type="submit" className="btn-secondary" disabled={!findQuery.trim()}>
               Find
@@ -176,24 +178,37 @@ Question: ${question.trim()}`
       </form>
 
       {findResults !== null && (
-        findResults.length === 0 ? (
+        findResults.totalMatches === 0 ? (
           <p className="askai-find-empty" role="status">No leads found for &ldquo;{lastFindQuery}&rdquo;.</p>
         ) : (
-          <ul className="askai-find-results" aria-label={`${findResults.length} matching leads for "${lastFindQuery}"`}>
-            {findResults.map(lead => (
-              <li key={lead.id}>
-                <button
-                  type="button"
-                  className="askai-find-result-btn"
-                  onClick={() => openLead(lead)}
-                >
-                  {lead.company}
-                  {lead.contactName ? ` — ${lead.contactName}` : ''}
-                  {' '}<span className="askai-find-result-status">({lead.status})</span>
-                </button>
-              </li>
-            ))}
-          </ul>
+          <>
+            <ul className="askai-find-results" aria-label={`${findResults.totalMatches} matching leads for "${lastFindQuery}"`}>
+              {findResults.matches.map(lead => {
+                const location = [lead.city, lead.state].filter(Boolean).join(', ')
+                return (
+                  <li key={lead.id}>
+                    <button
+                      type="button"
+                      className="askai-find-result-btn"
+                      onClick={() => openLead(lead)}
+                    >
+                      {lead.company}
+                      {lead.contactName ? ` — ${lead.contactName}` : ''}
+                      {' '}<span className="askai-find-result-status">
+                        ({lead.status}{location ? `, ${location}` : ''})
+                      </span>
+                    </button>
+                  </li>
+                )
+              })}
+            </ul>
+            {findResults.totalMatches > findResults.matches.length && (
+              <p className="askai-find-truncated">
+                Showing the top {findResults.matches.length} of {findResults.totalMatches} matches.
+                Add more to your search — like a company name — to narrow it down.
+              </p>
+            )}
+          </>
         )
       )}
 

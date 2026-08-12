@@ -1502,6 +1502,12 @@ circle.usa-map-pin { stroke: #ffffff; stroke-width: 1; }
   font-weight: 400;
   font-size: 0.8125rem;
 }
+.askai-find-truncated {
+  margin: 8px 0 20px;
+  color: #64748b;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+}
 
 /* ── Glossary dialog ──────────────────────────────────────────── */
 .glossary-list {
