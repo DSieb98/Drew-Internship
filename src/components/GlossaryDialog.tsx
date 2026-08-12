@@ -10,11 +10,10 @@ interface GlossaryDialogProps {
   onSelectTerm: (id: string) => void
   onBack: () => void
   onClose: () => void
-  onOpenTour: () => void
 }
 
 export default function GlossaryDialog({
-  view, activeTermId, cameFromList, onSelectTerm, onBack, onClose, onOpenTour,
+  view, activeTermId, cameFromList, onSelectTerm, onBack, onClose,
 }: GlossaryDialogProps) {
   const entry = activeTermId ? EXPLANATIONS_BY_ID[activeTermId] : null
 
@@ -50,11 +49,6 @@ export default function GlossaryDialog({
               </li>
             ))}
           </ul>
-          <div className="glossary-tour-link">
-            <button type="button" className="btn-secondary" onClick={onOpenTour}>
-              Take the app tour
-            </button>
-          </div>
         </>
       )}
 

@@ -1482,26 +1482,8 @@ circle.usa-map-pin { stroke: #ffffff; stroke-width: 1; }
   outline: 3px solid #f59e0b;
   outline-offset: -2px;
 }
-.glossary-tour-link {
-  margin-top: 4px;
-}
 .glossary-back-btn {
   margin-top: 4px;
-}
-
-/* ── Onboarding tour ──────────────────────────────────────────── */
-.onboarding-progress {
-  margin: 0 0 4px;
-  font-size: 0.8125rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: #64748b;
-}
-.onboarding-actions {
-  display: flex;
-  gap: 10px;
-  margin-top: 8px;
 }
 
 /* ── M3-T01: Nurture ──────────────────────────────────────────── */
