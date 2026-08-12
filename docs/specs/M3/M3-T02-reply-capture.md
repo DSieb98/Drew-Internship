@@ -4,7 +4,7 @@
 
 **Depends on:** T00, T01 (nothing to capture replies to until sends are live).
 
-**Owner:** Drew (Instantly.ai webhook/reply-parsing configuration) + Claude Code (consuming and surfacing the captured data in SalesForge).
+**Owner:** Drew (Instantly.ai webhook/reply-parsing configuration) + Claude Code (consuming and surfacing the captured data in SynetheixSales).
 
 ## In scope
 

@@ -314,7 +314,7 @@ async function getNotesPage(page: number): Promise<LacrmNoteSearchResult> {
 
 /** Pages through GetNotes (whole account, no ContactId filter — there's no bulk
  *  per-contact notes endpoint) until HasMoreResults is false (concurrently). Callers filter for
- *  SalesForge-authored call-log notes; see noteToCallLog() in lacrmMapping.ts. */
+ *  SynetheixSales-authored call-log notes; see noteToCallLog() in lacrmMapping.ts. */
 export async function getAllNotes(): Promise<LacrmNote[]> {
   return fetchAllPages(getNotesPage)
 }

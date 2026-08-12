@@ -1,12 +1,20 @@
-# SalesForge credential proxy (M1-T00).
+# SynetheixSales credential proxy (M1-T00).
 # Holds the LACRM + Anthropic API secrets server-side so the public GitHub
 # Pages static site never embeds them client-side. Deployed independently of
 # the static site — see .github/workflows/deploy-worker.yml.
 #
 # Secrets (ANTHROPIC_API_KEY, LACRM_API_KEY) are NOT set here — set them once
 # via `wrangler secret put <NAME>` (see worker/README.md).
+#
+# NOTE (D-32): renamed from "salesforge-api" 2026-08-12. Deploying this creates
+# a NEW Worker at a new *.workers.dev URL rather than renaming the old one in
+# place — the old "salesforge-api" Worker keeps running untouched, so nothing
+# breaks automatically. Cutting production over needs a human step: update the
+# `WORKER_URL` GitHub Actions repo variable to the new URL (Settings → Secrets
+# and variables → Actions → Variables), then optionally delete the old Worker
+# from the Cloudflare dashboard. See worker/README.md.
 
-name = "salesforge-api"
+name = "synetheixsales-api"
 main = "src/index.ts"
 compatibility_date = "2026-08-04"
 

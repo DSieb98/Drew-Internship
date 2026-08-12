@@ -16,7 +16,7 @@ durable, enriched, LACRM-backed data, reporting has something real to measure.
 ## B-06 — define scope before building
 
 The reporting scope is intentionally undefined in the spec. The defining step (B-06): identify the
-gaps Tim has in LACRM that he *can't* already see inside SalesForge — those gaps are what reporting
+gaps Tim has in LACRM that he *can't* already see inside SynetheixSales — those gaps are what reporting
 should fill. **Resolve this with Tim before building.** The spec's candidate metrics are a starting
 point, not a locked list: emails sent, response rate, leads qualified, alerts triggered, sample
 boxes sent, cost per lead.
@@ -28,7 +28,7 @@ LACRM data before committing to them.
 ### B-06 discussion prep (for Drew's conversation with Tim, added 2026-08-10)
 
 **The defining question, ask first, open-ended:** "What do you wish you could see about your
-pipeline that you *can't* already get from Today/All Leads/My List/Nurture/Map inside SalesForge
+pipeline that you *can't* already get from Today/All Leads/My List/Nurture/Map inside SynetheixSales
 right now?" — that gap, not a pre-made metrics list, is what M5 should fill. Don't lead with the
 candidate table below; use it only to sanity-check what he comes back with.
 

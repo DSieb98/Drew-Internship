@@ -19,7 +19,7 @@
 
 - The credit-guard logic itself (T00a) — this task consumes it.
 - Writing enriched data into LACRM's actual record structure (T02).
-- Retry queue and "enrichment pending" visibility in SalesForge (T04).
+- Retry queue and "enrichment pending" visibility in SynetheixSales (T04).
 
 ## Constraints
 

@@ -6,14 +6,14 @@
 
 ## In scope
 
-- Two-way sync of lead records: creates, updates, and stage changes made in SalesForge write to LACRM; changes in LACRM (or by other reps) are reflected back in SalesForge.
+- Two-way sync of lead records: creates, updates, and stage changes made in SynetheixSales write to LACRM; changes in LACRM (or by other reps) are reflected back in SynetheixSales.
 - REQ-09 stage tracking using LACRM's confirmed stage names (from T01), not the prototype-carried placeholder list.
-- Handling for a lead that exists in LACRM but was never imported through SalesForge (M0-T02), and vice versa, per the resolution procedure already defined in spec v1.2 §5 for reconciling stage-name mismatches.
+- Handling for a lead that exists in LACRM but was never imported through SynetheixSales (M0-T02), and vice versa, per the resolution procedure already defined in spec v1.2 §5 for reconciling stage-name mismatches.
 
 ## Out of scope
 
 - Nurture state, hot-alert status, call history, notes, and score sync — T04.
-- Conflict resolution mechanics — T05 (this task assumes the happy path; T05 handles what happens when SalesForge and LACRM disagree).
+- Conflict resolution mechanics — T05 (this task assumes the happy path; T05 handles what happens when SynetheixSales and LACRM disagree).
 
 ## Constraints
 
@@ -23,9 +23,9 @@
 
 ## Acceptance criteria
 
-- Creating or editing a lead in SalesForge is reflected in LACRM.
-- A stage change in SalesForge writes the correct LACRM stage name.
-- A change made directly in LACRM appears in SalesForge on next sync/load.
+- Creating or editing a lead in SynetheixSales is reflected in LACRM.
+- A stage change in SynetheixSales writes the correct LACRM stage name.
+- A change made directly in LACRM appears in SynetheixSales on next sync/load.
 - Stage names displayed anywhere in the app exactly match LACRM's real names — no leftover prototype placeholder names.
 
 ## How — Claude Code decides
@@ -82,12 +82,12 @@ applies, LACRM write failure is reported not thrown" pattern T02 established, si
 existing callers (`useTogglePin`, `MyListPage`) call `updateLead` fire-and-forget.
 
 **New UI surface (required by this task's own acceptance criteria — "a stage change in
-SalesForge writes the correct LACRM stage name" needs something in SalesForge that can actually
+SynetheixSales writes the correct LACRM stage name" needs something in SynetheixSales that can actually
 change it):** `LeadDrawer`'s Briefing tab replaced the read-only stage `<dd>` with a `<select>`
 (`SELECTABLE_STAGES`, labelled, announced via `useAnnounce()` on change) calling
 `store.updateLead(id, { stage })`. No prior M0/M1 spec had planned stage-editing UI — REQ-09's own
 acceptance criteria ("Tim can update stage manually from CRM or mobile") describes LACRM's own
-apps, not SalesForge — but T03's acceptance criteria requires the write path to be exercisable, so
+apps, not SynetheixSales — but T03's acceptance criteria requires the write path to be exercisable, so
 this is the minimal control that does it.
 
 **Not verified against a live account**, same standing caveat as T01/T02 — still no LACRM

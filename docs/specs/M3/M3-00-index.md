@@ -51,13 +51,13 @@ legitimate reason to stay deferred independent of whether the decision *could* b
 | Task | Name | Covers | Depends on | Owner |
 | :-- | :-- | :-- | :-- | :-- |
 | **T00** | Instantly.ai account & credential architecture | Account setup + how a static site authenticates to Instantly.ai's API without exposing secrets | M1-T00 (credential architecture spike — same underlying problem) | Drew |
-| **T01** | Automated send integration | Wire the existing AI draft tab (already built: draft + mailto/clipboard) to Instantly.ai's actual 3-email automated sequence | T00 | Claude Code (SalesForge side) + Drew (Instantly.ai config) |
+| **T01** | Automated send integration | Wire the existing AI draft tab (already built: draft + mailto/clipboard) to Instantly.ai's actual 3-email automated sequence | T00 | Claude Code (SynetheixSales side) + Drew (Instantly.ai config) |
 | **T02** | Reply/response capture | Capture buyer signals from email replies — role, purchase history, upcoming events, sample box interest | T00, T01 | Drew (Instantly.ai webhook/polling config) + Claude Code (consuming the data) |
 | **T03** | LACRM write-back for email activity | Sent emails, replies, and captured signals land in LACRM per PRINCIPLE-01 | T01, T02, M1-T01/T03 | Drew + Claude Code (boundary task, same pattern as M2-T02) |
 
 ## What "done" would mean for M3, if revisited
 
-Every lead's 3-email sequence (Introduction, Qualification, Sample Box offer) sends automatically through Instantly.ai instead of requiring Tim to manually mailto/copy-paste; replies are parsed for the four buyer signals REQ-06 specifies; and all of it — sends, replies, captured signals — lands in LACRM as the durable record, not just in Instantly.ai's own dashboard or SalesForge's in-memory state.
+Every lead's 3-email sequence (Introduction, Qualification, Sample Box offer) sends automatically through Instantly.ai instead of requiring Tim to manually mailto/copy-paste; replies are parsed for the four buyer signals REQ-06 specifies; and all of it — sends, replies, captured signals — lands in LACRM as the durable record, not just in Instantly.ai's own dashboard or SynetheixSales's in-memory state.
 
 ## References
 

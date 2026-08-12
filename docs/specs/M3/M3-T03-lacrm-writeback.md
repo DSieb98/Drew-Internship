@@ -1,14 +1,14 @@
 # M3-T03 — LACRM write-back for email activity
 
-**Goal:** Get sent-email records, replies, and captured buyer signals into LACRM as the durable record — per PRINCIPLE-01, "email activity" is explicitly listed as data that must be governed by LACRM as source of truth, not left living only in Instantly.ai's dashboard or SalesForge's in-memory state.
+**Goal:** Get sent-email records, replies, and captured buyer signals into LACRM as the durable record — per PRINCIPLE-01, "email activity" is explicitly listed as data that must be governed by LACRM as source of truth, not left living only in Instantly.ai's dashboard or SynetheixSales's in-memory state.
 
 **Depends on:** T01, T02, M1-T01 (LACRM field mapping), M1-T03 (lead record sync).
 
-**Owner:** Drew (write-path config) + Claude Code (if the write goes through SalesForge's LACRM client), same boundary-task shape as M2-T02.
+**Owner:** Drew (write-path config) + Claude Code (if the write goes through SynetheixSales's LACRM client), same boundary-task shape as M2-T02.
 
 ## In scope
 
-- Deciding the write path, same question M2-T02 faced: does Instantly.ai/Make.com write directly to LACRM, or does SalesForge's LACRM client (from M1) handle it? Document the choice.
+- Deciding the write path, same question M2-T02 faced: does Instantly.ai/Make.com write directly to LACRM, or does SynetheixSales's LACRM client (from M1) handle it? Document the choice.
 - Extending M1-T01's field-mapping layer to cover: sequence-sent status/date, reply received (yes/no, date), and the four captured buyer signals from T02.
 - Ensuring writes are additive to the existing lead record, consistent with M1 and M2's write-back tasks — never overwriting fields owned by other sync paths.
 
@@ -26,11 +26,11 @@
 
 - A sent sequence and any captured reply signals appear on the corresponding LACRM record without manual entry.
 - The write-path decision is documented with rationale, consistent with how M2-T02 documented its own.
-- Re-viewing the lead in SalesForge (via M1's store) reflects the LACRM data without extra steps.
+- Re-viewing the lead in SynetheixSales (via M1's store) reflects the LACRM data without extra steps.
 
 ## How — Claude Code decides
 
-Same as M2-T02: if the write path routes through SalesForge's LACRM client, the specific mapping-layer extension is Claude Code's call within PRINCIPLE-01. If Make.com/Instantly.ai writes directly, this is primarily Drew's config work with Claude Code reviewing mapping consistency.
+Same as M2-T02: if the write path routes through SynetheixSales's LACRM client, the specific mapping-layer extension is Claude Code's call within PRINCIPLE-01. If Make.com/Instantly.ai writes directly, this is primarily Drew's config work with Claude Code reviewing mapping consistency.
 
 ## References
 

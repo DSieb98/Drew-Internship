@@ -1,6 +1,6 @@
 # M3-T00 — Instantly.ai account & credential architecture
 
-**Goal:** Get Instantly.ai account access in place and resolve how SalesForge (a static, browser-only GitHub Pages site) can trigger authenticated Instantly.ai API calls — sending sequences, receiving reply data — without exposing API secrets client-side.
+**Goal:** Get Instantly.ai account access in place and resolve how SynetheixSales (a static, browser-only GitHub Pages site) can trigger authenticated Instantly.ai API calls — sending sequences, receiving reply data — without exposing API secrets client-side.
 
 **Depends on:** M1-T00 (credential architecture spike) — this task should reuse whatever pattern that spike lands on, not invent a second one for a second API.
 
@@ -31,7 +31,7 @@
 
 ## How — Claude Code decides
 
-Not applicable if M1-T00's pattern is a Drew-owned account/infra decision. If the resolved pattern requires SalesForge-side code changes (e.g. calling a proxy endpoint), that implementation detail is Claude Code's call within M1-T00's already-decided architecture.
+Not applicable if M1-T00's pattern is a Drew-owned account/infra decision. If the resolved pattern requires SynetheixSales-side code changes (e.g. calling a proxy endpoint), that implementation detail is Claude Code's call within M1-T00's already-decided architecture.
 
 ## References
 

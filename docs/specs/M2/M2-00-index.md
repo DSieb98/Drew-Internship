@@ -10,21 +10,21 @@ Every task inherits the project-wide constraints (PRINCIPLE-01/02/03, plain-lang
 
 M2 cannot start until:
 
-- **M1 is functionally complete** — specifically M1-T01 (LACRM field mapping) and M1-T03 (lead record sync), since enriched fields need a defined path into LACRM (PRINCIPLE-01: LACRM is the source of truth, not SalesForge's in-memory or synced-but-unmapped state).
+- **M1 is functionally complete** — specifically M1-T01 (LACRM field mapping) and M1-T03 (lead record sync), since enriched fields need a defined path into LACRM (PRINCIPLE-01: LACRM is the source of truth, not SynetheixSales's in-memory or synced-but-unmapped state).
 - **D-05 stands as-is** — Clay.com is the confirmed enrichment tool (Greg, Apr 2026). No re-litigation needed here.
 
 ## Build order
 
 | Task | Name | Covers | Depends on | Owner |
 | :-- | :-- | :-- | :-- | :-- |
-| **T00** | Clay.com account & enrichment field schema | Which fields Clay returns and how they map to SalesForge/LACRM concepts | — | Drew (+ Clay.com config) |
+| **T00** | Clay.com account & enrichment field schema | Which fields Clay returns and how they map to SynetheixSales/LACRM concepts | — | Drew (+ Clay.com config) |
 | **T00a** | Clay.com free-tier credit guard | Hard usage cap + dedup so the free tier (100 credits/mo) can't be silently overrun | T00 | Drew (Make.com) |
 | **T01** | Make.com enrichment trigger scenario | Pipeline Stage 2→3: trigger Clay enrichment after intake, before LACRM write | T00, T00a | Drew (Make.com, no-code) |
-| **T02** | LACRM enrichment write-back | Enriched fields land in LACRM as appended data, not overwritten raw import data | T00, T01, M1-T01, M1-T03 | Drew (Make.com) + Claude Code (if SalesForge-side read logic needed) |
+| **T02** | LACRM enrichment write-back | Enriched fields land in LACRM as appended data, not overwritten raw import data | T00, T01, M1-T01, M1-T03 | Drew (Make.com) + Claude Code (if SynetheixSales-side read logic needed) |
 | **T03** | Scoring engine consumes real enrichment data | Retire the `dealValue`-as-revenue proxy and notes-field keyword inference from M0-T03; score against real Clay fields | T02 | Claude Code |
-| **T04** | Enrichment failure handling & visibility | Failed/pending enrichment flagged, queued for retry, pipeline continues; SalesForge shows an honest "enrichment pending" state rather than silently scoring on stale/proxy data | T01–T03 | Drew (Make.com retry logic) + Claude Code (SalesForge-side state) |
+| **T04** | Enrichment failure handling & visibility | Failed/pending enrichment flagged, queued for retry, pipeline continues; SynetheixSales shows an honest "enrichment pending" state rather than silently scoring on stale/proxy data | T01–T03 | Drew (Make.com retry logic) + Claude Code (SynetheixSales-side state) |
 
-**Note on task ownership:** T00 and T01 are primarily Drew's own configuration work in Clay.com and Make.com — no-code tools outside the SalesForge repo. Claude Code's role there, if any, is limited to reviewing the field schema against what the scoring engine needs (T00) and to documentation. T02 is a boundary task — whichever side (Make.com scenario vs. SalesForge code) ends up owning the write depends on decisions already made in M1; the task file below flags this rather than presupposing it. T03 and T04's SalesForge-side pieces are the tasks that actually get handed to Claude Code as code work.
+**Note on task ownership:** T00 and T01 are primarily Drew's own configuration work in Clay.com and Make.com — no-code tools outside the SynetheixSales repo. Claude Code's role there, if any, is limited to reviewing the field schema against what the scoring engine needs (T00) and to documentation. T02 is a boundary task — whichever side (Make.com scenario vs. SynetheixSales code) ends up owning the write depends on decisions already made in M1; the task file below flags this rather than presupposing it. T03 and T04's SynetheixSales-side pieces are the tasks that actually get handed to Claude Code as code work.
 
 ## Scope reality check (added after Drew's free-tier guard request)
 

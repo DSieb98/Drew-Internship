@@ -1,8 +1,15 @@
-# SalesForge API Worker (M1-T00)
+# SynetheixSales API Worker (M1-T00)
 
 A small Cloudflare Worker that holds the LACRM and Anthropic API secrets server-side so the
 public GitHub Pages static site never embeds them. It exposes only the narrow endpoints the app
 actually needs — see `src/index.ts` for why (purpose-built, not a generic pass-through proxy).
+
+> **D-32 rename note:** `wrangler.toml`'s Worker name changed from `salesforge-api` to
+> `synetheixsales-api` 2026-08-12. That deploys a brand-new Worker at a new URL rather than
+> renaming the live one in place — production still points at the old `salesforge-api` URL until
+> a human completes steps 6–7 below against the new name. The setup steps here describe the
+> original one-time setup; re-run steps 5–7 (deploy, point the app at it, confirm auto-deploy
+> still targets the right Worker) to finish the cutover, then delete the old Worker once confirmed.
 
 - `POST /api/anthropic/chat` — `{ prompt: string }` → `{ text: string }`
 - `GET /api/lacrm/ping` — connectivity check (calls LACRM's `GetUser`) → current user info
@@ -16,7 +23,8 @@ actually needs — see `src/index.ts` for why (purpose-built, not a generic pass
 - `POST /api/lacrm/pipeline-items` — place a contact in a pipeline (`CreatePipelineItem`)
 - `PATCH /api/lacrm/pipeline-items/:id` — move a contact's stage (`EditPipelineItem`)
 - `GET /api/lacrm/custom-fields` — list Contact custom fields (`GetCustomFields`), used to bootstrap
-  the SalesForge score/status-override/scoring-input fields on first run
+  the app's score/status-override/scoring-input fields on first run (still named with the
+  `SalesForge` prefix in LACRM itself — see the note in `src/utils/lacrmMapping.ts`, D-32)
 - `POST /api/lacrm/custom-fields` — create a Contact custom field (`CreateCustomField`)
 - `GET /api/lacrm/notes` — list notes account-wide (`GetNotes`), used to read back call history
 - `POST /api/lacrm/notes` — attach a note to a contact (`CreateNote`), used to log a call
@@ -45,10 +53,10 @@ actually needs — see `src/index.ts` for why (purpose-built, not a generic pass
    ```bash
    npx wrangler deploy
    ```
-   Wrangler prints the live URL, e.g. `https://salesforge-api.<your-subdomain>.workers.dev`.
+   Wrangler prints the live URL, e.g. `https://synetheixsales-api.<your-subdomain>.workers.dev`.
 6. **Point the app at it:**
-   - Local dev: add `VITE_WORKER_URL=https://salesforge-api.<your-subdomain>.workers.dev` to the
-     repo-root `.env`.
+   - Local dev: add `VITE_WORKER_URL=https://synetheixsales-api.<your-subdomain>.workers.dev` to
+     the repo-root `.env`.
    - Production build: add a repository **variable** (not secret — it's just a public URL) named
      `WORKER_URL` under GitHub repo → Settings → Secrets and variables → Actions → Variables, set
      to the same URL. The Pages deploy workflow reads it at build time.

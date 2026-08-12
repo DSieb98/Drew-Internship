@@ -34,7 +34,7 @@ function RouteAnnouncer() {
   const isFirstRender = useRef(true)
 
   useEffect(() => {
-    const title = PAGE_TITLES[location.pathname] ?? 'SalesForge'
+    const title = PAGE_TITLES[location.pathname] ?? 'SynetheixSales'
     announce(title)
 
     if (!isFirstRender.current) {
@@ -56,7 +56,7 @@ export default function App() {
         Skip to main content
       </a>
       <header className="app-header">
-        <h1 className="app-title">SalesForge</h1>
+        <h1 className="app-title">SynetheixSales</h1>
         <SyncStatusIndicator />
         <div className="app-header-actions">
           <button type="button" className="help-header-btn" onClick={() => setAskAiOpen(true)}>

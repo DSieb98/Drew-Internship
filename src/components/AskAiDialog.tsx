@@ -118,7 +118,7 @@ export default function AskAiDialog({ open, onClose }: AskAiDialogProps) {
       ? scopedLeads.map(summarizeLead).join('\n')
       : '(no leads in this scope)'
 
-    const prompt = `You are a warm, plain-language sales assistant inside SalesForge, a CRM dashboard for a salesperson named Tim. Answer the question below using only the lead data provided. Be concise, concrete, and avoid jargon. If the data doesn't answer the question, say so honestly instead of guessing.
+    const prompt = `You are a warm, plain-language sales assistant inside SynetheixSales, a CRM dashboard for a salesperson named Tim. Answer the question below using only the lead data provided. Be concise, concrete, and avoid jargon. If the data doesn't answer the question, say so honestly instead of guessing.
 
 Today's date: ${today}
 

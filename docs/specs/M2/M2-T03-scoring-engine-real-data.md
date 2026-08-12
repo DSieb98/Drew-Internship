@@ -2,7 +2,7 @@
 
 **Goal:** Retire the interim workarounds in M0-T03's scoring engine — the `dealValue`-as-revenue proxy and notes-field keyword inference — and score leads against real Clay.com enrichment data once it's available in LACRM.
 
-**Depends on:** T02 (enriched data must actually be reaching LACRM/SalesForge first).
+**Depends on:** T02 (enriched data must actually be reaching LACRM/SynetheixSales first).
 
 **Owner:** Claude Code.
 

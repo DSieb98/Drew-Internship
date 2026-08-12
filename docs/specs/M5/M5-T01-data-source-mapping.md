@@ -1,6 +1,6 @@
 # M5-T01 — Data source mapping for reporting metrics
 
-**Goal:** For every metric that survives T00/T00a, identify exactly where its data comes from — and confirm that source is LACRM (or derivable from LACRM), per PRINCIPLE-01, not a side calculation living only in SalesForge or Make.com.
+**Goal:** For every metric that survives T00/T00a, identify exactly where its data comes from — and confirm that source is LACRM (or derivable from LACRM), per PRINCIPLE-01, not a side calculation living only in SynetheixSales or Make.com.
 
 **Depends on:** T00, T00a.
 
@@ -9,7 +9,7 @@
 ## In scope (best current guess — revise once T00 lands)
 
 - **Leads qualified** — likely derivable from the scoring engine's (M0-T03) Hot/Warm/Cold status or raw score, synced to LACRM. Confirm whether "qualified" means score-above-threshold, or a specific pipeline stage (REQ-09).
-- **Alerts triggered** — REQ-07's hot-alert logic runs client-side in SalesForge today (dashboard strip, not push). Confirm whether a triggered alert is currently logged anywhere durable, or whether this metric requires adding logging that doesn't exist yet.
+- **Alerts triggered** — REQ-07's hot-alert logic runs client-side in SynetheixSales today (dashboard strip, not push). Confirm whether a triggered alert is currently logged anywhere durable, or whether this metric requires adding logging that doesn't exist yet.
 - **Boxes sent** — likely maps to the "Sample Sent" pipeline stage (REQ-09/M1 stage sync). Confirm stage name matches once B-01 (LACRM stage names) is resolved.
 - **Cost per lead** — no current source. The business-goal figure (~$1–3/lead target vs. ~$40/lead baseline, Spec v1.2 §0) implies this matters, but nothing today tracks spend per lead. Candidate inputs: Clay.com credit consumption (M2-T00a's credit counter, if M2 is built — could double as a cost-tracking input rather than building a second one), Make.com usage, LACRM subscription cost amortized. Needs a decision, not just a data pull.
 - **Emails sent / response rate** — if T00a lands on "pending M3" rather than drop/proxy, this task also needs to check what `M3-T03-lacrm-writeback.md` actually lands in LACRM once M3 is built, and map against that.

@@ -393,7 +393,7 @@ export function useLacrmStore(): AppStore {
           }
         }
 
-        // Call history: SalesForge-authored Notes only (noteToCallLog() filters
+        // Call history: SynetheixSales-authored Notes only (noteToCallLog() filters
         // out anything else), plus the per-lead called/lastContactDate they imply.
         const callLogs = notes
           .map(noteToCallLog)

@@ -1,11 +1,21 @@
 /**
- * SalesForge Lead ↔ LACRM field mapping (M1-T01, extended in M1-T03/T04).
+ * SynetheixSales Lead ↔ LACRM field mapping (M1-T01, extended in M1-T03/T04).
  * Full category-by-category decision writeup: docs/specs/M1/M1-T01-lacrm-client-mapping.md,
  * M1-T03-lead-stage-sync.md, and M1-T04-extended-state-sync.md.
  *
  * This module covers Contact field mapping (native + T04's custom fields,
  * T06's pin/note fields, M3-T01's nurture fields), pipeline stage-name
  * reconciliation, and call-log ↔ Note conversion — all wired end-to-end.
+ *
+ * NOTE (D-32, 2026-08-12): the app was renamed SalesForge → SynetheixSales, but the CF_* custom
+ * field names below and CALL_LOG_NOTE_MARKER deliberately still say "SalesForge" — they're the
+ * literal keys already live on the real 21,212-contact LACRM account. Renaming these string
+ * values without a live data migration would make the app stop recognizing its own previously-
+ * synced fields/notes (ensureSalesforgeCustomFields() matches by exact name; a changed name means
+ * "not found" → it creates duplicates instead, orphaning every already-synced value). No live
+ * LACRM credentials are available to run that migration safely from a dev environment, and these
+ * are private per-account field labels Tim/Drew only ever see inside LACRM's own settings, not in
+ * this app's UI — so they're out of scope for the rename until a deliberate migration is planned.
  */
 
 import type { CallLog, Lead, NurtureTouch, ScoreCriterionResult } from '../store/types'

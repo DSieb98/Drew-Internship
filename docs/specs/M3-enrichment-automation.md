@@ -36,7 +36,7 @@ enrichment, and CRM together so the pipeline runs without hand-offs.
 - All project-wide constraints (`00-development-plan.md` §3). Clay.com and Make.com must be
   commercially licensed (PRINCIPLE-02) — both are already approved.
 - Enriched data is LACRM-backed (PRINCIPLE-01).
-- Browser-only applies to the SalesForge app; Make.com and Clay.com are external services
+- Browser-only applies to the SynetheixSales app; Make.com and Clay.com are external services
   orchestrated around it. How the browser app consumes enriched results (vs. what runs in
   Make.com) is a design question to resolve within this milestone, consistent with the M1
   verification findings.

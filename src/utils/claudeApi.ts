@@ -1,6 +1,6 @@
 /**
  * Browser-safe Anthropic API helper.
- * Calls the SalesForge credential proxy Worker (M1-T00) instead of Anthropic
+ * Calls the SynetheixSales credential proxy Worker (M1-T00) instead of Anthropic
  * directly — the real API key lives server-side and never reaches the browser.
  * See worker/README.md and docs/specs/M1/M1-T00-credential-architecture.md.
  */

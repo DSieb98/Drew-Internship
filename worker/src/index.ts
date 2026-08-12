@@ -1,5 +1,5 @@
 /**
- * SalesForge credential proxy (M1-T00) + LACRM client (M1-T01).
+ * SynetheixSales credential proxy (M1-T00) + LACRM client (M1-T01).
  *
  * The static app on GitHub Pages cannot hold API secrets — anything shipped
  * to the browser is public. This Worker holds the real LACRM + Anthropic

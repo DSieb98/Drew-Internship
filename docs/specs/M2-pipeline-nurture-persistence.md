@@ -42,7 +42,7 @@ one name into another (B-01). REQ-10's nurture state has nowhere durable to live
 > stages to the confirmed names exactly. Flagged ambiguities for T01 to resolve explicitly, not
 > guess:
 > - `New Lead` and `Contacted` have no LACRM equivalent — these look like pre-qualification
->   SalesForge-only states that occur before REQ-04 creates the CRM record at `Qualified`, not
+>   SynetheixSales-only states that occur before REQ-04 creates the CRM record at `Qualified`, not
 >   LACRM pipeline stages at all. Confirm with Drew whether they stay as an app-only pre-stage or
 >   get dropped.
 > - `Proposal Sent` and `Quote Requested` both plausibly collapse into the single confirmed

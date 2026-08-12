@@ -1,7 +1,7 @@
 /**
  * M1-T05 — retry/backoff + offline detection for LACRM write-through calls.
  *
- * PRINCIPLE-01 ("LACRM wins") means a write SalesForge can't actually confirm
+ * PRINCIPLE-01 ("LACRM wins") means a write SynetheixSales can't actually confirm
  * happened must never be presented as if it did. This module gives every
  * write path in lacrmStore.ts the same policy: retry a failed call a few
  * times with growing delays, but fail fast (no retries) when the browser is

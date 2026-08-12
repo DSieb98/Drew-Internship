@@ -34,7 +34,7 @@ export default function GlossaryDialog({
         <>
           <h2 className="dialog-heading">Glossary</h2>
           <p className="dialog-body">
-            Plain-language explanations for terms used around SalesForge. Select a term to read more.
+            Plain-language explanations for terms used around SynetheixSales. Select a term to read more.
           </p>
           <ul className="glossary-list" aria-label="Glossary terms">
             {EXPLANATIONS.map(e => (
