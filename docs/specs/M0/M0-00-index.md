@@ -24,7 +24,7 @@ rewriting every feature, but do not build the sync itself here.
 | **T03** | Scoring engine & status derivation | REQ-03, REQ-12 | T01, T09 |
 | **T04** | Today & All Leads views | REQ-07 (UI), TZ-01 | T01, T02, T03 |
 | **T05** | Lead drawer / warm handoff + AI features | REQ-08 | T04, T03 |
-| **T06** | Map view | gap G3, TZ-01 | T01, T02 |
+| **T06** | ~~Map view~~ Call Times (superseded 2026-08-12, D-34) | gap G3, TZ-01 | T01, T02 |
 | **T07** | Watchlist / "My List" | gap G1 | T01, T04 |
 | **T08** | Call logging & Call History | gap G2 | T04, T05 |
 | **T09** | Settings | REQ-12, DV-01, all configurable values | T01 |

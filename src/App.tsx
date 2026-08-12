@@ -7,7 +7,7 @@ import { useAnnounce } from './hooks/useAnnounce'
 import { useHelp } from './hooks/useHelp'
 import TodayPage from './pages/TodayPage'
 import AllLeadsPage from './pages/AllLeadsPage'
-import MapPage from './pages/MapPage'
+import CallTimesPage from './pages/CallTimesPage'
 import HistoryPage from './pages/HistoryPage'
 import MyListPage from './pages/MyListPage'
 import NurturePage from './pages/NurturePage'
@@ -17,7 +17,7 @@ import SettingsPage from './pages/SettingsPage'
 const PAGE_TITLES: Record<string, string> = {
   '/': 'Today',
   '/all-leads': 'All Leads',
-  '/map': 'Map',
+  '/call-times': 'Call Times',
   '/history': 'History',
   '/my-list': 'My List',
   '/nurture': 'Nurture',
@@ -74,7 +74,7 @@ export default function App() {
         <Routes>
           <Route path="/" element={<TodayPage />} />
           <Route path="/all-leads" element={<AllLeadsPage />} />
-          <Route path="/map" element={<MapPage />} />
+          <Route path="/call-times" element={<CallTimesPage />} />
           <Route path="/history" element={<HistoryPage />} />
           <Route path="/my-list" element={<MyListPage />} />
           <Route path="/nurture" element={<NurturePage />} />

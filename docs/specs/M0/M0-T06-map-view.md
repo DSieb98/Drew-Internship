@@ -1,5 +1,14 @@
 # M0-T06 — Map view (gap G3, TZ-01)
 
+> **Superseded 2026-08-12 (D-34).** Tim asked for the visual map to be replaced with filtering by
+> city, state, and time zone plus a "good calling hours now" toggle — the map (always `aria-hidden`
+> and decorative-only per this spec's own accessibility constraint below) never actually told a
+> JAWS user whether it was a good time to call someone in another time zone; direct filtering does.
+> `MapPage.tsx`/`USAMap.tsx` deleted; replaced by `CallTimesPage.tsx` at `/call-times`. The
+> "non-map accessible list" this spec required is what's left, now the primary interface rather
+> than a fallback, extended with state and time-zone filters. D3/TopoJSON/us-atlas dependencies
+> removed (gzipped bundle: 248.72 KB → 205.69 KB). See CLAUDE.md D-34.
+
 **Goal:** Show Tim his leads geographically on a US map, filterable by status and city, so he can
 see where his opportunities cluster.
 
