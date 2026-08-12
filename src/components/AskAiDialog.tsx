@@ -1,9 +1,11 @@
 import { useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import FocusTrapDialog from './FocusTrapDialog'
 import ExplainTerm from './ExplainTerm'
 import { useStore } from '../store/StoreContext'
 import { useAnnounce } from '../hooks/useAnnounce'
 import { askClaude } from '../utils/claudeApi'
+import { findLeads } from '../utils/leadSearch'
 import type { Lead } from '../store/types'
 
 type ScopeId = 'hot' | 'hot-warm' | 'all'
@@ -45,12 +47,16 @@ function summarizeLead(lead: Lead): string {
 export default function AskAiDialog({ open, onClose }: AskAiDialogProps) {
   const store = useStore()
   const announce = useAnnounce()
+  const navigate = useNavigate()
   const [scope, setScope] = useState<ScopeId>(DEFAULT_SCOPE)
   const [question, setQuestion] = useState('')
   const [status, setStatus] = useState<AiStatus>('idle')
   const [answer, setAnswer] = useState('')
   const [error, setError] = useState('')
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const [findQuery, setFindQuery] = useState('')
+  const [findResults, setFindResults] = useState<Lead[] | null>(null)
+  const [lastFindQuery, setLastFindQuery] = useState('')
 
   const activeScope = SCOPES.find(s => s.id === scope) ?? SCOPES[0]
   const scopedLeads = store.leads.filter(l => activeScope.match(l.status))
@@ -60,11 +66,36 @@ export default function AskAiDialog({ open, onClose }: AskAiDialogProps) {
     setStatus('idle')
     setAnswer('')
     setError('')
+    setFindQuery('')
+    setFindResults(null)
+    setLastFindQuery('')
   }
 
   function handleClose() {
     reset()
     onClose()
+  }
+
+  function handleFind(e: React.FormEvent) {
+    e.preventDefault()
+    const q = findQuery.trim()
+    if (!q) return
+    const results = findLeads(store.leads, q)
+    setFindResults(results)
+    setLastFindQuery(q)
+    announce(
+      results.length === 0
+        ? `No leads found for "${q}".`
+        : `${results.length} ${results.length === 1 ? 'lead' : 'leads'} found for "${q}".`
+    )
+  }
+
+  // Navigates to All Leads (the only list that holds every lead regardless of status/filter)
+  // and asks it to open this lead's drawer once it lands there — see AllLeadsPage's
+  // location.state handling.
+  function openLead(lead: Lead) {
+    handleClose()
+    navigate('/all-leads', { state: { openLeadId: lead.id } })
   }
 
   function useSuggestion(q: string) {
@@ -117,10 +148,56 @@ Question: ${question.trim()}`
     >
       <h2 className="dialog-heading">Ask your AI assistant</h2>
       <p className="dialog-body">
-        Ask a plain-English question about your leads and get a quick answer.
+        Ask a plain-English question about your leads and get a quick answer, or find a specific
+        lead below and jump straight to it.
         <ExplainTerm id="ai-assistant" />
       </p>
 
+      <h3 className="today-section-heading">Find a lead</h3>
+      <form onSubmit={handleFind} className="askai-find-form">
+        <div className="settings-field">
+          <label htmlFor="askai-find-query" className="settings-field-label">
+            Search by company or contact name
+          </label>
+          <div className="askai-find-row">
+            <input
+              id="askai-find-query"
+              type="text"
+              className="askai-find-input"
+              value={findQuery}
+              onChange={e => setFindQuery(e.target.value)}
+              placeholder="e.g. Acme Corp or Jane Smith"
+            />
+            <button type="submit" className="btn-secondary" disabled={!findQuery.trim()}>
+              Find
+            </button>
+          </div>
+        </div>
+      </form>
+
+      {findResults !== null && (
+        findResults.length === 0 ? (
+          <p className="askai-find-empty" role="status">No leads found for &ldquo;{lastFindQuery}&rdquo;.</p>
+        ) : (
+          <ul className="askai-find-results" aria-label={`${findResults.length} matching leads for "${lastFindQuery}"`}>
+            {findResults.map(lead => (
+              <li key={lead.id}>
+                <button
+                  type="button"
+                  className="askai-find-result-btn"
+                  onClick={() => openLead(lead)}
+                >
+                  {lead.company}
+                  {lead.contactName ? ` — ${lead.contactName}` : ''}
+                  {' '}<span className="askai-find-result-status">({lead.status})</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        )
+      )}
+
+      <h3 className="today-section-heading">Ask a question</h3>
       <fieldset className="log-call-outcome-group askai-scope-group">
         <legend className="settings-field-label">
           Leads to consider ({scopedLeads.length} of {store.leads.length})

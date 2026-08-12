@@ -1,5 +1,11 @@
 # M0-T11 — Free-form AI assistant (gap G5)
 
+> **Update 2026-08-12 (D-30):** added a "Find a lead" search to this same dialog, at Tim's request
+> after his JAWS test — type a company or contact name, get matching leads back as a button list,
+> select one to navigate to it (opens on All Leads). This is local/deterministic matching against
+> already-loaded lead data, not an AI call, and it doesn't mutate any lead data — consistent with
+> this task's existing "answers; doesn't mutate data" scope line. See CLAUDE.md D-30.
+
 **Goal:** Let Tim ask plain-English questions about his leads ("who should I call first?", "anyone
 gone quiet?", "write a follow-up for Ironclad") and get a useful, plain-language answer.
 

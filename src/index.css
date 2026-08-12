@@ -1453,6 +1453,55 @@ circle.usa-map-pin { stroke: #ffffff; stroke-width: 1; }
   outline: 3px solid #f59e0b;
   outline-offset: 2px;
 }
+.askai-find-form { margin-bottom: 4px; }
+.askai-find-row {
+  display: flex;
+  gap: 8px;
+}
+.askai-find-input {
+  flex: 1;
+  padding: 8px 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 0.9375rem;
+}
+.askai-find-empty {
+  margin: 10px 0 20px;
+  color: #64748b;
+  font-size: 0.875rem;
+}
+.askai-find-results {
+  list-style: none;
+  margin: 10px 0 20px;
+  padding: 0;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  max-height: 220px;
+  overflow-y: auto;
+}
+.askai-find-results li + li { border-top: 1px solid #e2e8f0; }
+.askai-find-result-btn {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 10px 14px;
+  background: #fff;
+  color: #0f172a;
+  border: none;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+.askai-find-result-btn:hover { background: #f8fafc; }
+.askai-find-result-btn:focus-visible {
+  outline: 3px solid #f59e0b;
+  outline-offset: -2px;
+}
+.askai-find-result-status {
+  color: #64748b;
+  font-weight: 400;
+  font-size: 0.8125rem;
+}
 
 /* ── Glossary dialog ──────────────────────────────────────────── */
 .glossary-list {

@@ -1,4 +1,5 @@
 import { useMemo, useRef, useEffect, useState } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { useStore } from '../store/StoreContext'
 import { useAnnounce } from '../hooks/useAnnounce'
 import { useTogglePin } from '../hooks/useTogglePin'
@@ -22,6 +23,8 @@ export default function AllLeadsPage() {
   const store = useStore()
   const announce = useAnnounce()
   const togglePin = useTogglePin()
+  const location = useLocation()
+  const navigate = useNavigate()
   const { leads, settings, loading, error } = store
 
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -30,6 +33,17 @@ export default function AllLeadsPage() {
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null)
 
   const now = useMemo(() => new Date(), [])
+
+  // Opens a lead handed off by the AI assistant's "Find a lead" navigation
+  // (AskAiDialog) once leads have finished loading, then clears the nav state
+  // so revisiting this page later doesn't reopen it.
+  useEffect(() => {
+    const openLeadId = (location.state as { openLeadId?: string } | null)?.openLeadId
+    if (!openLeadId || loading.leads) return
+    const lead = leads.find(l => l.id === openLeadId)
+    if (lead) setSelectedLead(lead)
+    navigate(location.pathname, { replace: true, state: null })
+  }, [location.state, location.pathname, leads, loading.leads, navigate])
 
   const filteredLeads = useMemo(() => {
     let result: Lead[]
