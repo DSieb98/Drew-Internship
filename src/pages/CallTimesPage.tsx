@@ -107,7 +107,7 @@ export default function CallTimesPage() {
   if (leads.length === 0) {
     return (
       <section aria-labelledby="call-times-heading">
-        <h2 id="call-times-heading" className="page-heading">Call Times</h2>
+        <h2 id="call-times-heading" className="page-heading">Map</h2>
         <div className="placeholder-content">
           <p>No leads yet. Import leads from the All Leads page to see them here.</p>
         </div>
@@ -117,7 +117,7 @@ export default function CallTimesPage() {
 
   return (
     <section aria-labelledby="call-times-heading">
-      <h2 id="call-times-heading" className="page-heading">Call Times</h2>
+      <h2 id="call-times-heading" className="page-heading">Map</h2>
       <p className="leads-filter-intro">
         Filter leads by city, state, or time zone to find who&rsquo;s where — and who you can
         actually call right now.
