@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useStore } from '../store/StoreContext'
 import { useAnnounce } from '../hooks/useAnnounce'
 import { useTogglePin } from '../hooks/useTogglePin'
+import { useNow } from '../hooks/useNow'
 import LeadCard from '../components/LeadCard'
 import LeadDrawer from '../components/LeadDrawer'
 import ExplainTerm from '../components/ExplainTerm'
@@ -21,7 +22,7 @@ export default function TodayPage() {
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null)
 
   // Stable "now" for the whole render (avoid per-card drift)
-  const now = useMemo(() => new Date(), [])
+  const now = useNow()
 
   const hotLeads = useMemo(
     () =>

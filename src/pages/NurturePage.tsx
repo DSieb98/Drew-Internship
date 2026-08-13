@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useStore } from '../store/StoreContext'
 import { useAnnounce } from '../hooks/useAnnounce'
+import { useNow } from '../hooks/useNow'
 import ExplainTerm from '../components/ExplainTerm'
 import NurtureTouchDialog from '../components/NurtureTouchDialog'
 import { isGoneQuiet } from '../utils/leadActivity'
@@ -23,7 +24,7 @@ export default function NurturePage() {
   const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null)
   const [enrollingId, setEnrollingId] = useState<string | null>(null)
 
-  const now = useMemo(() => new Date(), [])
+  const now = useNow()
 
   // Looked up live (not a stale snapshot) so NurtureTouchDialog sees each committed touch
   // immediately and can advance to the next one without being closed and reopened.

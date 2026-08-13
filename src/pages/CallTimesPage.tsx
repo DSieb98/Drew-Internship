@@ -2,6 +2,7 @@ import { useMemo, useRef, useEffect, useState } from 'react'
 import { useStore } from '../store/StoreContext'
 import { useAnnounce } from '../hooks/useAnnounce'
 import { useTogglePin } from '../hooks/useTogglePin'
+import { useNow } from '../hooks/useNow'
 import LeadCard from '../components/LeadCard'
 import LeadDrawer from '../components/LeadDrawer'
 import ExplainTerm from '../components/ExplainTerm'
@@ -38,7 +39,7 @@ export default function CallTimesPage() {
   const [callableNowOnly, setCallableNowOnly] = useState(false)
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null)
 
-  const now = useMemo(() => new Date(), [])
+  const now = useNow()
 
   const cities = useMemo(() => {
     const set = new Set<string>()
