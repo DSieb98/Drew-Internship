@@ -37,6 +37,7 @@ export default function LeadCard({ lead, settings, now = new Date(), onOpen, onT
     lead.stage ? `Stage: ${lead.stage}` : null,
     location ? `Location: ${location}` : null,
     lead.dealValue > 0 ? `Deal value: ${dvLabel}, $${lead.dealValue.toLocaleString()}` : null,
+    lead.phone ? `Phone: ${lead.phone}` : null,
     quiet ? 'Gone quiet' : null,
     lead.called ? 'Called' : null,
     lead.pinned ? 'Pinned to My List' : null,
@@ -61,6 +62,18 @@ export default function LeadCard({ lead, settings, now = new Date(), onOpen, onT
 
       {lead.contactName && (
         <p className="lead-card-contact" aria-hidden="true">{lead.contactName}</p>
+      )}
+
+      {lead.phone && (
+        <p className="lead-card-phone">
+          <a
+            href={`tel:${lead.phone}`}
+            className="lead-card-phone-link"
+            aria-label={`Call ${lead.contactName || lead.company} at ${lead.phone}`}
+          >
+            {lead.phone}
+          </a>
+        </p>
       )}
 
       <div className="lead-card-meta" aria-hidden="true">

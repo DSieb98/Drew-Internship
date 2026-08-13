@@ -487,6 +487,22 @@ body {
   color: #475569;
 }
 
+.lead-card-phone {
+  margin: 0;
+  font-size: 0.875rem;
+}
+
+.lead-card-phone-link {
+  color: #1d4ed8;
+  text-decoration: underline;
+}
+.lead-card-phone-link:hover { color: #1e3a8a; }
+.lead-card-phone-link:focus-visible {
+  outline: 3px solid #f59e0b;
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
 .lead-card-meta {
   display: flex;
   flex-wrap: wrap;
