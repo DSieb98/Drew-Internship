@@ -48,3 +48,46 @@ export function stateFullName(state: string): string | null {
   const abbr = normalizeStateAbbr(state)
   return abbr ? STATE_ABBR_TO_NAME[abbr] ?? null : null
 }
+
+// One representative IANA zone per state — state-level approximation, not city-level (the
+// coordinate data that would allow city-level precision was removed with the map, D-34). Several
+// states genuinely span two zones (TX/FL/MI/IN/KY/TN/KS/NE/ND/SD/ID/OR); each is mapped to its
+// most-populous zone. AZ gets its own entry (America/Phoenix) since it doesn't observe DST,
+// unlike the rest of the Mountain zone (America/Denver).
+const STATE_TIMEZONES: Record<string, string> = {
+  CT: 'America/New_York', DE: 'America/New_York', DC: 'America/New_York',
+  FL: 'America/New_York', GA: 'America/New_York', ME: 'America/New_York',
+  MD: 'America/New_York', MA: 'America/New_York', MI: 'America/New_York',
+  NH: 'America/New_York', NJ: 'America/New_York', NY: 'America/New_York',
+  NC: 'America/New_York', OH: 'America/New_York', PA: 'America/New_York',
+  RI: 'America/New_York', SC: 'America/New_York', VT: 'America/New_York',
+  VA: 'America/New_York', WV: 'America/New_York', IN: 'America/New_York',
+  KY: 'America/New_York',
+
+  AL: 'America/Chicago', AR: 'America/Chicago', IL: 'America/Chicago',
+  IA: 'America/Chicago', KS: 'America/Chicago', LA: 'America/Chicago',
+  MN: 'America/Chicago', MS: 'America/Chicago', MO: 'America/Chicago',
+  NE: 'America/Chicago', ND: 'America/Chicago', OK: 'America/Chicago',
+  SD: 'America/Chicago', TX: 'America/Chicago', WI: 'America/Chicago',
+  TN: 'America/Chicago',
+
+  CO: 'America/Denver', ID: 'America/Denver', MT: 'America/Denver',
+  NM: 'America/Denver', UT: 'America/Denver', WY: 'America/Denver',
+  AZ: 'America/Phoenix',
+
+  CA: 'America/Los_Angeles', NV: 'America/Los_Angeles',
+  OR: 'America/Los_Angeles', WA: 'America/Los_Angeles',
+
+  AK: 'America/Anchorage',
+  HI: 'Pacific/Honolulu',
+}
+
+// Derives a lead's IANA timezone from its state — there's no LACRM field or spreadsheet column
+// for timezone (it was never meant to be imported directly, only derived), so this is the only
+// source. Returns '' (not null) so callers can assign it straight into Lead.timezone without an
+// extra null-check; falsy behaves the same as "unknown" everywhere timezone is consumed
+// (LeadCard's local-time display, CallTimesPage's filter/toggle).
+export function stateToTimezone(state: string): string {
+  const abbr = normalizeStateAbbr(state)
+  return abbr ? STATE_TIMEZONES[abbr] ?? '' : ''
+}

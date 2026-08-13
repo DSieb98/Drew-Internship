@@ -4,6 +4,7 @@ import { useStore } from '../store/StoreContext'
 import { useAnnounce } from '../hooks/useAnnounce'
 import { parseLeadFile } from '../utils/parseLeadFile'
 import { guessMapping, LEAD_FIELDS } from '../utils/guessMapping'
+import { stateToTimezone } from '../utils/usGeo'
 import type { Lead } from '../store/types'
 
 type ImportStep = 'file' | 'mapping' | 'preview'
@@ -42,7 +43,10 @@ function rowToLead(row: Record<string, string>, mapping: Record<string, string |
     phone:           get('phone'),
     city:            get('city'),
     state:           get('state'),
-    timezone:        '',
+    // Derived from state, not a mappable spreadsheet column — see lacrmStore.ts's contactToLead()
+    // for why this can't just stay '' (broke LeadCard's local-time display and D-34's calling-
+    // hours filter for every lead since M1-T02).
+    timezone:        stateToTimezone(get('state')),
     dealValue:       getNum('dealValue') ?? 0,
     stage:           get('stage'),
     score:           0,

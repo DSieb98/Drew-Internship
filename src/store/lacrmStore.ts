@@ -59,6 +59,7 @@ import {
   callLogToNoteText,
   noteToCallLog,
 } from '../utils/lacrmMapping'
+import { stateToTimezone } from '../utils/usGeo'
 
 const DEFAULT_SETTINGS: Settings = {
   hotScoreThreshold: 75,
@@ -132,7 +133,11 @@ function contactToLead(contact: LacrmContact, settings: Settings): Lead {
     phone: patch.phone ?? '',
     city: patch.city ?? '',
     state: patch.state ?? '',
-    timezone: '',
+    // Derived from state, not synced — LACRM has no timezone field. Found broken 2026-08-13
+    // (hardcoded '' since M1-T02): silently blanked LeadCard's local-time display (TZ-01) for
+    // every real lead, and made CallTimesPage's "Good calling hours only" toggle (D-34) always
+    // return zero leads, since a falsy timezone can't be evaluated against calling hours.
+    timezone: stateToTimezone(patch.state ?? ''),
     dealValue: patch.dealValue ?? 0,
     stage: '',
     score,
