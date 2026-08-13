@@ -49,6 +49,17 @@ export const CF_NURTURE_ENROLLED_AT = 'SynetheixSales Nurture Enrolled At' as co
 export const CF_NURTURE_TOUCHES = 'SynetheixSales Nurture Touches' as const
 export const CF_NURTURE_ARCHIVED = 'SynetheixSales Nurture Archived' as const
 
+// LACRM's web app contact page — `account.lessannoyingcrm.com` is LACRM's own
+// account-router subdomain (not this app's account-specific one), which
+// redirects a signed-in browser to the right account automatically, so this
+// works as a single fixed link regardless of which LACRM account is logged
+// in. `Lead.id` *is* the LACRM `ContactId` (see `contactToLead()` in
+// lacrmStore.ts), so no separate lookup is needed. Confirmed against a real
+// LACRM contact URL (`/app/View_Contact?ContactId=...`), not guessed.
+export function lacrmContactUrl(contactId: string): string {
+  return `https://account.lessannoyingcrm.com/app/View_Contact?ContactId=${encodeURIComponent(contactId)}`
+}
+
 export interface SalesforgeCurrencyDisplaySettings {
   CurrencyType: string
   CurrencySymbol: string

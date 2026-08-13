@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import type { Lead, Settings } from '../store/types'
 import { getTZInfo } from '../utils/tz'
 import { isGoneQuiet } from '../utils/leadActivity'
+import { lacrmContactUrl } from '../utils/lacrmMapping'
 
 interface LeadCardProps {
   lead: Lead
@@ -99,31 +100,38 @@ export default function LeadCard({ lead, settings, now = new Date(), onOpen, onT
         </div>
       )}
 
-      {(onOpen || onTogglePin) && (
-        <div className="lead-card-actions">
-          {onTogglePin && (
-            <button
-              type="button"
-              className={`lead-card-pin-btn${lead.pinned ? ' lead-card-pin-btn--pinned' : ''}`}
-              aria-pressed={lead.pinned}
-              aria-label={lead.pinned ? `Unpin ${lead.company} from My List` : `Pin ${lead.company} to My List`}
-              onClick={onTogglePin}
-            >
-              <span aria-hidden="true">{lead.pinned ? '★' : '☆'}</span> {lead.pinned ? 'Pinned' : 'Pin'}
-            </button>
-          )}
-          {onOpen && (
-            <button
-              type="button"
-              className="lead-card-open-btn"
-              aria-label={`View details for ${lead.company}`}
-              onClick={onOpen}
-            >
-              View details
-            </button>
-          )}
-        </div>
-      )}
+      <div className="lead-card-actions">
+        {onTogglePin && (
+          <button
+            type="button"
+            className={`lead-card-pin-btn${lead.pinned ? ' lead-card-pin-btn--pinned' : ''}`}
+            aria-pressed={lead.pinned}
+            aria-label={lead.pinned ? `Unpin ${lead.company} from My List` : `Pin ${lead.company} to My List`}
+            onClick={onTogglePin}
+          >
+            <span aria-hidden="true">{lead.pinned ? '★' : '☆'}</span> {lead.pinned ? 'Pinned' : 'Pin'}
+          </button>
+        )}
+        {onOpen && (
+          <button
+            type="button"
+            className="lead-card-open-btn"
+            aria-label={`View details for ${lead.company}`}
+            onClick={onOpen}
+          >
+            View details
+          </button>
+        )}
+        <a
+          href={lacrmContactUrl(lead.id)}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="lead-card-lacrm-btn"
+          aria-label={`Open ${lead.company} in LACRM (opens in a new tab)`}
+        >
+          Open in LACRM
+        </a>
+      </div>
     </article>
   )
 }
