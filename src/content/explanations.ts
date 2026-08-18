@@ -80,9 +80,9 @@ export const EXPLANATIONS: Explanation[] = [
     text: 'A 4-touch check-in plan (a Day 0 email, a Day 7 call, a Day 21 email, and a Day 35 call) for Cold leads that have gone quiet. Each touch gets an AI-drafted starting point you edit and mark done yourself — nothing sends automatically. If a lead\'s score improves, it moves back to the main pipeline on its own.',
   },
   {
-    id: 'ai-cost-budget',
-    term: 'AI Assistant Budget',
-    text: "SalesWhiz's AI features (Ask AI, and the nurture touch drafts) are the one part of the app with a cost that changes based on how much it's used, so there's a $20/month cap on it. Once the cap is reached, the AI assistant pauses itself until the 1st of the next month — everything else in SalesWhiz keeps working normally the whole time.",
+    id: 'monthly-spending',
+    term: 'Monthly Spending',
+    text: "The running total of SalesWhiz's usage-based costs this month — money that scales with how much the app is used, as opposed to flat subscriptions like LACRM's own fee (which isn't shown here). Right now that's entirely the AI assistant (Ask AI and the nurture touch drafts), capped at $20/month — once that cap is reached, the AI assistant pauses itself until the 1st of the next month, and everything else in SalesWhiz keeps working normally. Clay enrichment credits would show up here too, once that feature is live.",
   },
 ]
 

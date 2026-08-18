@@ -644,6 +644,14 @@ body {
   max-width: 640px;
 }
 
+.reports-budget-intro {
+  margin: 0 0 14px;
+  font-size: 0.875rem;
+  color: #475569;
+  max-width: 640px;
+  line-height: 1.5;
+}
+
 .reports-unavailable-list {
   list-style: none;
   margin: 0;

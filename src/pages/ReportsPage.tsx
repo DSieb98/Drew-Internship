@@ -116,9 +116,15 @@ export default function ReportsPage() {
 
       <section aria-labelledby="reports-budget-heading" className="today-section">
         <h3 id="reports-budget-heading" className="today-section-heading">
-          AI Assistant Budget
-          <ExplainTerm id="ai-cost-budget" />
+          Monthly Spending
+          <ExplainTerm id="monthly-spending" />
         </h3>
+
+        <p className="reports-budget-intro">
+          Costs that change with how much SalesWhiz is used — not flat subscriptions like
+          LACRM's own fee. Today that's just the AI assistant; Clay enrichment credits (not live
+          yet — see "Cost per lead" below) would add here as a second line once that ships.
+        </p>
 
         {aiUsageLoading ? (
           <p className="placeholder-content" role="status">Loading AI usage…</p>
@@ -137,9 +143,9 @@ export default function ReportsPage() {
               )
             })()}
 
-            <dl className="reports-stats" aria-label="AI assistant budget statistics">
+            <dl className="reports-stats" aria-label="Monthly spending statistics">
               <div className="reports-stat">
-                <dt className="reports-stat-label">Spent this month</dt>
+                <dt className="reports-stat-label">Total spent this month</dt>
                 <dd className="reports-stat-value">${aiUsage.costUsd.toFixed(2)}</dd>
               </div>
               <div className="reports-stat">
@@ -153,11 +159,10 @@ export default function ReportsPage() {
             </dl>
 
             <p className="reports-stat-caveat">
-              Covers the AI assistant only (Ask AI answers, "find a lead," nurture touch
-              drafts) — the one part of SalesWhiz whose cost changes with how much it's used.
-              Once the ${aiUsage.budgetUsd.toFixed(0)} monthly cap is reached, the AI assistant
-              pauses itself until the next month; everything else in the app keeps working as
-              normal. Resets on the 1st.
+              Made up entirely of the AI assistant (Ask AI answers, "find a lead," nurture touch
+              drafts) right now. Once the ${aiUsage.budgetUsd.toFixed(0)} monthly cap is reached,
+              the AI assistant pauses itself until the next month; everything else in the app
+              keeps working as normal. Resets on the 1st.
             </p>
           </>
         ) : null}
