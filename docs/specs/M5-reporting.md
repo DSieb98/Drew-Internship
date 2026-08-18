@@ -40,8 +40,8 @@ candidate table below; use it only to sanity-check what he comes back with.
 | Sample boxes sent | Yes — pipeline has a "Sample Box Sent" stage | Just a count over time, or also time-in-stage? |
 | Cost per lead | Partial — Clay/Make.com/Anthropic spend is trackable, but M2 enrichment isn't live yet | Does Tim actually want $/lead, or is that more a Drew/Greg metric? |
 | Alerts triggered | Yes — hot-alert derives live from `status`/`dealValue`, already computed | History of past alerts, or is the live dashboard alert (M0) already enough? |
-| Emails sent | No real data source — Instantly deferred (M4), draft tab has no send tracking | Drop unless M4 is revived |
-| Response rate | No — same reason (depended on Instantly) | Drop unless M4 is revived |
+| Emails sent | No real data source — Instantly deferred (M4), draft tab has no send tracking | **Resolved (T00a, D-37): shows as "pending" placeholder**, not dropped — don't present as gone for good |
+| Response rate | No — same reason (depended on Instantly) | **Resolved (T00a, D-37): shows as "pending" placeholder**, same as above |
 
 **Other framing questions that shape the build, not just the metric list:**
 - Time range: month-snapshot, or trend-over-time? Trend needs point-in-time history stored
