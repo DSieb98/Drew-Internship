@@ -20,3 +20,12 @@ compatibility_date = "2026-08-04"
 
 [observability]
 enabled = true
+
+# AI cost-budget tracking (D-39) — stores the running monthly Anthropic spend so the
+# Worker can enforce the $20/month cap and the Reports dashboard can display it. This id
+# is a placeholder: Drew needs to run `npx wrangler kv namespace create AI_COST_KV` once
+# (same class of one-time step as the Worker's own initial setup, see worker/README.md)
+# and paste the real "id" it prints in here before this binding will work.
+[[kv_namespaces]]
+binding = "AI_COST_KV"
+id = "476dad55705a4f5b977f5c2799984424"

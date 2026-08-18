@@ -1426,6 +1426,24 @@ body {
   .sync-status--syncing .sync-status-glyph { animation: none; }
 }
 
+/* ── AI budget status (D-39) ─────────────────────────────────── */
+/* Same pattern as sync-status: text always carries the meaning, color/glyph reinforce. */
+.ai-budget-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 14px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+.ai-budget-status-glyph { font-size: 0.9375rem; line-height: 1; }
+
+.ai-budget-status--ok      { background: #052e1a; color: #86efac; }
+.ai-budget-status--warning { background: #431407; color: #fdba74; }
+.ai-budget-status--reached { background: #450a0a; color: #fca5a5; }
+
 /* ── Help header button ──────────────────────────────────────── */
 .help-header-btn {
   flex-shrink: 0;

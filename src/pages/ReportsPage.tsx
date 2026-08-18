@@ -1,7 +1,26 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useStore } from '../store/StoreContext'
 import ExplainTerm from '../components/ExplainTerm'
 import { countAtOrPastStage, countQualifiedLeads } from '../utils/reportingMetrics'
+import { getAiUsageStatus, type AiUsageStatus } from '../utils/claudeApi'
+
+// D-39 — AI cost budget thresholds. "Warning" starts at 80% so Tim has real notice
+// before the assistant actually stops working at 100% (enforced Worker-side, D-39).
+const AI_BUDGET_WARNING_PERCENT = 80
+
+type AiBudgetLevel = 'ok' | 'warning' | 'reached'
+
+function aiBudgetLevel(percentUsed: number): AiBudgetLevel {
+  if (percentUsed >= 100) return 'reached'
+  if (percentUsed >= AI_BUDGET_WARNING_PERCENT) return 'warning'
+  return 'ok'
+}
+
+const AI_BUDGET_COPY: Record<AiBudgetLevel, { glyph: string; label: string }> = {
+  ok: { glyph: '✓', label: 'Within budget' },
+  warning: { glyph: '⚠', label: 'Nearing this month’s budget' },
+  reached: { glyph: '⚠', label: 'Budget reached — AI assistant is paused until next month' },
+}
 
 // M5-T02 — first pass at REQ-11 reporting. Covers exactly what M5-T01 confirmed has a real,
 // LACRM-backed source today (leads qualified, sample boxes sent); everything else the spec's
@@ -21,6 +40,22 @@ export default function ReportsPage() {
     () => countAtOrPastStage(leads, 'Sample Box Sent'),
     [leads]
   )
+
+  // D-39 — AI cost budget. Loaded independently of the lead-backed store (same pattern
+  // as AskAiDialog's direct askClaude() calls) since it comes from the Worker, not LACRM.
+  const [aiUsage, setAiUsage] = useState<AiUsageStatus | null>(null)
+  const [aiUsageError, setAiUsageError] = useState('')
+  const [aiUsageLoading, setAiUsageLoading] = useState(true)
+
+  useEffect(() => {
+    let cancelled = false
+    setAiUsageLoading(true)
+    getAiUsageStatus()
+      .then(status => { if (!cancelled) { setAiUsage(status); setAiUsageError('') } })
+      .catch(err => { if (!cancelled) setAiUsageError(err instanceof Error ? err.message : 'Unknown error') })
+      .finally(() => { if (!cancelled) setAiUsageLoading(false) })
+    return () => { cancelled = true }
+  }, [])
 
   if (leads.length === 0) {
     return (
@@ -77,6 +112,55 @@ export default function ReportsPage() {
           boxes sent" includes leads that have since moved further along, since a box was sent to
           reach that stage.
         </p>
+      </section>
+
+      <section aria-labelledby="reports-budget-heading" className="today-section">
+        <h3 id="reports-budget-heading" className="today-section-heading">
+          AI Assistant Budget
+          <ExplainTerm id="ai-cost-budget" />
+        </h3>
+
+        {aiUsageLoading ? (
+          <p className="placeholder-content" role="status">Loading AI usage…</p>
+        ) : aiUsageError ? (
+          <p className="dialog-error" role="alert">Couldn't load AI usage: {aiUsageError}</p>
+        ) : aiUsage ? (
+          <>
+            {(() => {
+              const level = aiBudgetLevel(aiUsage.percentUsed)
+              const { glyph, label } = AI_BUDGET_COPY[level]
+              return (
+                <p className={`ai-budget-status ai-budget-status--${level}`} role="status">
+                  <span className="ai-budget-status-glyph" aria-hidden="true">{glyph}</span>
+                  {label}
+                </p>
+              )
+            })()}
+
+            <dl className="reports-stats" aria-label="AI assistant budget statistics">
+              <div className="reports-stat">
+                <dt className="reports-stat-label">Spent this month</dt>
+                <dd className="reports-stat-value">${aiUsage.costUsd.toFixed(2)}</dd>
+              </div>
+              <div className="reports-stat">
+                <dt className="reports-stat-label">Monthly budget</dt>
+                <dd className="reports-stat-value">${aiUsage.budgetUsd.toFixed(2)}</dd>
+              </div>
+              <div className="reports-stat">
+                <dt className="reports-stat-label">Remaining</dt>
+                <dd className="reports-stat-value">${aiUsage.remainingUsd.toFixed(2)}</dd>
+              </div>
+            </dl>
+
+            <p className="reports-stat-caveat">
+              Covers the AI assistant only (Ask AI answers, "find a lead," nurture touch
+              drafts) — the one part of SalesWhiz whose cost changes with how much it's used.
+              Once the ${aiUsage.budgetUsd.toFixed(0)} monthly cap is reached, the AI assistant
+              pauses itself until the next month; everything else in the app keeps working as
+              normal. Resets on the 1st.
+            </p>
+          </>
+        ) : null}
       </section>
 
       <section aria-labelledby="reports-unavailable-heading" className="today-section">
