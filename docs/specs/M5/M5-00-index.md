@@ -40,6 +40,21 @@ two metrics as currently unavailable, not permanently impossible.
 | **T01** | Data source mapping for remaining metrics | Where leads-qualified, alerts-triggered, boxes-sent, cost-per-lead actually come from | T00, T00a | Drew (+ Claude Code review) |
 | **T02** | Reporting dashboard UI | Monthly summary view in SalesWhiz | T01 | Claude Code |
 
+## Status (2026-08-18, D-38) — T01/T02 built as a v0, ahead of T00
+
+T00a resolved first (D-37 — emails-sent/response-rate show as "pending" placeholders). Rather
+than wait for T00 (Tim's actual gap-analysis session — still unscheduled, still the real thing
+that should define this milestone's scope), Drew asked for a first pass using only what's already
+measurable today: `ReportsPage.tsx` now shows a live "Pipeline Snapshot" (total leads, leads
+qualified, sample boxes sent) plus honest "Not yet available" placeholders for the other four
+approved-scope metrics (cost per lead, alerts triggered, emails sent, response rate) — no
+fabricated numbers, per T02's own acceptance criteria. Replaces the M0 "coming later" placeholder.
+
+**This explicitly isn't what "done" means for M5** (see below) — it's a starting point Drew can
+show Tim, expected to be revised (metrics added, removed, or redefined) once T00 actually happens.
+See `M5-T01-data-source-mapping.md` and `M5-T02-reporting-dashboard-ui.md` for what was built and
+why, and `CLAUDE.md` D-38.
+
 ## What "done" means for M5
 
 Not fully knowable yet — that's the point of B-06. What's knowable now: REQ-11's metric list is

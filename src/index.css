@@ -601,6 +601,74 @@ body {
   color: #6b21a8;
 }
 
+/* ── M5-T02: Reports page ──────────────────────────────────────── */
+.reports-intro {
+  margin: 0 0 28px;
+  color: #475569;
+  font-size: 0.9375rem;
+  max-width: 680px;
+  line-height: 1.6;
+}
+
+.reports-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin: 0;
+}
+.reports-stat {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 16px 20px;
+  min-width: 180px;
+}
+.reports-stat-label {
+  margin: 0 0 4px;
+  font-size: 0.875rem;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.reports-stat-value {
+  margin: 0;
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+.reports-stat-caveat {
+  margin: 10px 0 0;
+  font-size: 0.8125rem;
+  color: #94a3b8;
+  max-width: 640px;
+}
+
+.reports-unavailable-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 680px;
+}
+.reports-unavailable-item {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 10px 14px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+}
+.reports-unavailable-text {
+  margin: 0;
+  font-size: 0.875rem;
+  color: #64748b;
+}
+.reports-unavailable-text strong { color: #334155; }
+
 /* ── T04: Shared leads list ──────────────────────────────────── */
 .leads-list {
   list-style: none;

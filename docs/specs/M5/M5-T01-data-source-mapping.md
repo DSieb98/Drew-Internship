@@ -34,6 +34,34 @@
 
 Claude Code's role here is reviewing proposed sources against what M1's LACRM client actually supports (field availability, query capability) and flagging anything that would require new sync work beyond M1's scope — not deciding the business question of what "qualified" or "cost per lead" should mean.
 
+## Decision & what was built (2026-08-18, D-38)
+
+Built ahead of T00 as a v0 pass (Drew's call — see `M5-00-index.md`'s status note), against the
+"best current guess" list above, resolved per metric:
+
+- **Leads qualified** — resolved as score ≥ `Settings.scoreQualificationThreshold` (the app's
+  existing "Pipeline Qualification Cutoff" concept, already surfaced in Settings and the
+  `pipeline-qualification` glossary entry) rather than a specific pipeline stage — reuses a
+  definition that already exists instead of inventing a reporting-specific one. Cutoff still
+  defaults to 0 (every lead qualifies) until Tim/Greg confirm a real number, so this metric is
+  honest but not yet meaningful until that Settings value is set for real.
+- **Boxes sent** — resolved as leads currently at, or already past, the confirmed "Sample Box
+  Sent" pipeline stage (`CONFIRMED_LACRM_STAGES` order, `src/utils/reportingMetrics.ts`). Real
+  finding: LACRM only stores a contact's *current* stage, not a history of stage transitions, so
+  this can only ever be a live snapshot ("how many have reached this point so far"), never a true
+  monthly count of a send *event* — flagged in the UI copy itself, not left implicit.
+- **Alerts triggered** — confirmed no durable source exists. REQ-07's hot-alert (`TodayPage.tsx`)
+  computes live/client-side and was deliberately never logged anywhere (D-24 dropped hot-alert
+  status from the original sync plan as unnecessary). Marked "not yet available" rather than
+  reporting the currently-active alert as if it were a count.
+- **Cost per lead** — confirmed no source yet, as expected: depends on M2 (Clay/Make.com spend
+  tracking) actually being live, which it isn't. Marked "not yet available."
+- **Emails sent / response rate** — per T00a/D-37, shown as "not yet available" placeholders, not
+  dropped.
+
+Nothing here required a new parallel store — every real number traces to `Lead` fields already
+synced through the M1 LACRM client (PRINCIPLE-01).
+
 ## References
 
 - Spec v1.2: REQ-11, REQ-07, REQ-09, §0 (business goal — cost/lead figures)
