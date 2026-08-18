@@ -1,6 +1,6 @@
 # M2-T00 — Clay.com account & enrichment field schema
 
-**Status:** Testing complete (2026-08-10). Schema confirmed against two leads in a Clay test workbook (Ford — large/public, and Visit Dallas — small/non-public) seeded from real SynetheixSales/LACRM leads via the live app. See "Confirmed field schema" and "Flagged gaps" below.
+**Status:** Testing complete (2026-08-10). Schema confirmed against two leads in a Clay test workbook (Ford — large/public, and Visit Dallas — small/non-public) seeded from real SalesWhiz/LACRM leads via the live app. See "Confirmed field schema" and "Flagged gaps" below.
 
 **Goal:** Set up Clay.com access and define exactly which enrichment fields it will return per lead, so downstream tasks (Make.com trigger, LACRM write-back, scoring engine) have a fixed schema to build against instead of guessing at Clay's output shape.
 

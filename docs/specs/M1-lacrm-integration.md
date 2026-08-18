@@ -1,6 +1,6 @@
 # M1 — LACRM Integration (REQ-04)
 
-**Goal:** Make LACRM the real, durable source of truth for SynetheixSales data, with two-way sync, so
+**Goal:** Make LACRM the real, durable source of truth for SalesWhiz data, with two-way sync, so
 that everything the app shows is backed by LACRM and survives reloads, devices, and accidental
 deletion in the app.
 
@@ -11,7 +11,7 @@ milestone (see below).
 
 ## Why this milestone exists
 
-PRINCIPLE-01 says LACRM is the source of truth and that no data lives permanently in SynetheixSales
+PRINCIPLE-01 says LACRM is the source of truth and that no data lives permanently in SalesWhiz
 unless it's also in LACRM. Today nothing persists at all. Until this milestone lands, M2's nurture
 persistence, M3's enrichment write-back, and M5's reporting all have nowhere durable to live.
 REQ-04 was deliberately moved up to Phase 1 (D-13) for exactly this reason.
@@ -33,10 +33,10 @@ the decision on how to proceed; surfacing the blocker is the deliverable in that
 
 ## In scope (assuming verification passes)
 
-- Two-way sync between SynetheixSales and LACRM for the data PRINCIPLE-01 enumerates: lead records,
+- Two-way sync between SalesWhiz and LACRM for the data PRINCIPLE-01 enumerates: lead records,
   pipeline stage, lead score, Hot/Warm/Cold status, hot-alert status, notes, and call history /
   activity.
-- A clear, accessible behavior for sync state and conflicts: when SynetheixSales and LACRM disagree,
+- A clear, accessible behavior for sync state and conflicts: when SalesWhiz and LACRM disagree,
   **LACRM wins** (PRINCIPLE-01), and Tim should never be left looking at stale data without
   knowing it.
 - Reconcile the M0 in-memory model to LACRM as the durable store; in-memory becomes a cache/working
@@ -60,8 +60,8 @@ the decision on how to proceed; surfacing the blocker is the deliverable in that
 ## Acceptance criteria
 
 - Step 1 findings are documented and shared before sync work begins.
-- A lead created/edited in SynetheixSales appears correctly in LACRM, and a change made in LACRM is
-  reflected in SynetheixSales.
+- A lead created/edited in SalesWhiz appears correctly in LACRM, and a change made in LACRM is
+  reflected in SalesWhiz.
 - Data survives a full reload and a different session/device (insofar as browser-only allows).
 - In a deliberate conflict, LACRM's value is the one that persists.
 - No LACRM credential is exposed in a way the Step 1 verification flagged as unacceptable.

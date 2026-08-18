@@ -4,7 +4,7 @@
 
 **Depends on:** T00 (credential access).
 
-**Owner:** Claude Code (SynetheixSales-side integration) + Drew (Instantly.ai sequence/campaign configuration).
+**Owner:** Claude Code (SalesWhiz-side integration) + Drew (Instantly.ai sequence/campaign configuration).
 
 ## In scope
 

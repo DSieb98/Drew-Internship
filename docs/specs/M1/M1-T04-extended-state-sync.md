@@ -76,7 +76,7 @@ extended to read/write them. `scoreBreakdown` round-trips as JSON in a TextArea 
 sane way to model a configurable-length per-criterion breakdown as separate fields. Call history:
 `callLogToNoteText()`/`noteToCallLog()` convert a `CallLog` to/from a marker-prefixed
 (`"SalesForge Call Log"` first line, JSON body) LACRM Note — the marker lets hydrate tell
-SynetheixSales-authored notes apart from anything a user enters directly in LACRM, which this app
+SalesWhiz-authored notes apart from anything a user enters directly in LACRM, which this app
 doesn't model and leaves untouched.
 
 **Store (`src/store/lacrmStore.ts`):** hydrate now also fetches `getAllNotes()` and runs

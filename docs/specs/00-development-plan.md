@@ -1,6 +1,6 @@
-# ProForma / SynetheixSales — Phased Development Plan
+# ProForma / SalesWhiz — Phased Development Plan
 
-**Source of truth:** ProForma_SynetheixSales_Spec_v1.2 (June 18, 2026)
+**Source of truth:** ProForma_SalesWhiz_Spec_v1.2 (June 18, 2026)
 **Audience:** Drew (project owner) + Claude Code (builder)
 **Build target decision:** Browser-only. Fresh production rebuild (prototype is reference only).
 
@@ -65,7 +65,7 @@ These are the bounds inside which Claude Code is free to choose any approach.
   licensed for commercial use. The current prototype stack (React 18 / SheetJS / D3 / Plus Jakarta
   Sans / Anthropic API) is clean; flag any AGPL/copyleft dependency before adding it. Claude Code
   may keep this stack or choose another, as long as the result stays commercially licensed.
-- **PRINCIPLE-03 — Accessibility first.** SynetheixSales must be fully usable by Tim via JAWS.
+- **PRINCIPLE-03 — Accessibility first.** SalesWhiz must be fully usable by Tim via JAWS.
   Accessibility is a build requirement on every feature, not a later pass. The prototype's
   established patterns (nav landmark with `aria-current="page"` links for section navigation,
   focus-trapped dialogs, aria-live regions, skip links, descriptive aria-labels, list semantics,

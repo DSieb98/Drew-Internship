@@ -398,8 +398,10 @@ export function useLacrmStore(): AppStore {
           }
         }
 
-        // Call history: SynetheixSales-authored Notes only (noteToCallLog() filters
-        // out anything else), plus the per-lead called/lastContactDate they imply.
+        // Call history: app-authored Notes only, marked with the live "SynetheixSales Call
+        // Log" prefix (still that literal name in LACRM until the field/marker rename
+        // happens too, D-35) — noteToCallLog() filters out anything else — plus the
+        // per-lead called/lastContactDate they imply.
         const callLogs = notes
           .map(noteToCallLog)
           .filter((c): c is CallLog => c !== null)

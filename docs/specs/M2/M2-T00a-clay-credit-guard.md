@@ -41,7 +41,7 @@
 
 ## How — Claude Code decides
 
-Not applicable — this is Make.com configuration, not SynetheixSales repo code. If any SynetheixSales-side surfacing of "enrichment paused — free tier limit reached" is needed (vs. per-lead "pending"), that's covered under T04, not here.
+Not applicable — this is Make.com configuration, not SalesWhiz repo code. If any SalesWhiz-side surfacing of "enrichment paused — free tier limit reached" is needed (vs. per-lead "pending"), that's covered under T04, not here.
 
 ## References
 
