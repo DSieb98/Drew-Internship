@@ -14,6 +14,19 @@
 > drop/proxy/placeholder decision below; just don't present it to Tim as permanent. See
 > `docs/specs/M5/M5-00-index.md`'s scope-problem note.
 
+## Resolved (2026-08-18, see CLAUDE.md D-37)
+
+Drew's call: **placeholder**, not drop or proxy. "Emails sent" and "Response rate" stay in
+REQ-11's metric list but render as an explicit "pending" state (e.g. "N/A — pending outreach
+automation") in the eventual dashboard (T02), consistent with the project's established
+deferred-features-stay-visible pattern (M4). No manual/proxy substitute — Tim's call-log notes
+weren't treated as a real stand-in for either metric. Revisit for real if/when M3 is ever
+un-paused and `M3-T03-lacrm-writeback.md` lands real send/reply data.
+
+T00's Tim session (`M5-T00-tim-gap-analysis.md`) can proceed on this basis — the candidate metric
+list Tim reacts to should show these two as "pending," not silently absent and not presented as
+permanently gone.
+
 ## In scope
 
 - For **emails sent** and **response rate**: decide one of —
