@@ -11,7 +11,11 @@ actually needs — see `src/index.ts` for why (purpose-built, not a generic pass
 > original one-time setup; re-run steps 5–7 (deploy, point the app at it, confirm auto-deploy
 > still targets the right Worker) to finish the cutover, then delete the old Worker once confirmed.
 
-- `POST /api/anthropic/chat` — `{ prompt: string }` → `{ text: string }`
+- `POST /api/anthropic/chat` — `{ prompt: string }` → `{ text: string }`. Enforces the $20/month AI
+  budget cap (D-39): returns `402` with `{ error, budgetReached: true }` once the month's tracked
+  spend reaches the cap, instead of calling Anthropic.
+- `GET /api/anthropic/usage` — current month's AI spend (D-39) → `{ month, costUsd, budgetUsd,
+  remainingUsd, percentUsed }`, read by the Reports page's "AI Assistant Budget" section
 - `GET /api/lacrm/ping` — connectivity check (calls LACRM's `GetUser`) → current user info
 - `GET /api/lacrm/contacts?search=` — search contacts (`GetContacts`)
 - `GET /api/lacrm/contacts/:id` — get one contact (`GetContact`)
@@ -68,6 +72,22 @@ actually needs — see `src/index.ts` for why (purpose-built, not a generic pass
 After that, redeploying the Worker only needs a normal `git push` — CI handles it. Rotating a
 secret (e.g. a new Anthropic key) needs `wrangler secret put` again; it does not require a code
 change or redeploy of the static site.
+
+### AI cost budget setup (D-39 — one more one-time step, Drew)
+
+The $20/month AI budget cap needs a Workers KV namespace to track spend in (Cloudflare's
+free tier covers this app's traffic easily — 1,000 writes/day, 100,000 reads/day). Create it
+once and paste the id into `wrangler.toml`:
+
+```bash
+cd worker
+npx wrangler kv namespace create AI_COST_KV
+```
+
+Wrangler prints an `id = "..."` line — replace `REPLACE_WITH_KV_NAMESPACE_ID` in
+`wrangler.toml`'s `[[kv_namespaces]]` block with that value, then redeploy (`git push`, same
+as any other Worker change). Until this is done, `/api/anthropic/chat` and `/api/anthropic/usage`
+will fail (no bound KV namespace) — the rest of the app is unaffected.
 
 ## Local development
 

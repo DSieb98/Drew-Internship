@@ -16,6 +16,13 @@
 export interface Env {
   ANTHROPIC_API_KEY: string
   LACRM_API_KEY: string
+  // AI cost-budget tracking (D-39) — Workers KV namespace, one JSON-string-of-a-number
+  // value per calendar month ("usage:YYYY-MM" -> cumulative USD spent). KV has no atomic
+  // increment, so two requests landing in the same instant could race and one update could
+  // be lost — accepted for this app's scale (one user, a handful of AI calls a day); not
+  // safe to rely on if usage ever gets meaningfully concurrent. See worker/README.md for
+  // the one-time `wrangler kv namespace create` step this binding needs.
+  AI_COST_KV: KVNamespace
 }
 
 const ALLOWED_ORIGINS = new Set([
@@ -27,6 +34,39 @@ const ALLOWED_ORIGINS = new Set([
 const ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages'
 const ANTHROPIC_MODEL = 'claude-haiku-4-5'
 const LACRM_URL = 'https://api.lessannoyingcrm.com/v2/'
+
+// ── AI cost budget (D-39) ────────────────────────────────────────────────
+// Drew's confirmed hard cap: the AI assistant (Anthropic calls) may not cost
+// more than this in a calendar month. Pricing is Claude Haiku 4.5's public
+// per-million-token rate ($1.00 input / $5.00 output), current as of the
+// model this Worker calls (see ANTHROPIC_MODEL above) — revisit both figures
+// together if the model ever changes.
+const MONTHLY_BUDGET_USD = 20
+const HAIKU_INPUT_USD_PER_MTOK = 1.0
+const HAIKU_OUTPUT_USD_PER_MTOK = 5.0
+
+function currentUsageKey(): string {
+  return `usage:${new Date().toISOString().slice(0, 7)}` // "usage:2026-08"
+}
+
+async function getMonthCostUsd(env: Env): Promise<number> {
+  const raw = await env.AI_COST_KV.get(currentUsageKey())
+  return raw ? Number(raw) || 0 : 0
+}
+
+async function addMonthCostUsd(env: Env, deltaUsd: number): Promise<number> {
+  const key = currentUsageKey()
+  const updated = (await getMonthCostUsd(env)) + deltaUsd
+  await env.AI_COST_KV.put(key, String(updated))
+  return updated
+}
+
+function estimateCostUsd(usage: { input_tokens: number; output_tokens: number }): number {
+  return (
+    (usage.input_tokens / 1_000_000) * HAIKU_INPUT_USD_PER_MTOK +
+    (usage.output_tokens / 1_000_000) * HAIKU_OUTPUT_USD_PER_MTOK
+  )
+}
 
 function corsHeaders(origin: string | null): Record<string, string> {
   const headers: Record<string, string> = {
@@ -55,6 +95,7 @@ interface AnthropicChatBody {
 
 interface AnthropicUpstreamResponse {
   content: Array<{ type: string; text: string }>
+  usage: { input_tokens: number; output_tokens: number }
 }
 
 interface AnthropicUpstreamError {
@@ -71,6 +112,21 @@ async function handleAnthropicChat(req: Request, env: Env, origin: string | null
 
   const prompt = body.prompt?.trim()
   if (!prompt) return json({ error: 'Missing "prompt".' }, 400, origin)
+
+  // D-39: hard cap — checked before spending anything this call. Best-effort under
+  // concurrent requests (see the AI_COST_KV comment on Env), acceptable at this app's
+  // real usage volume.
+  const spentSoFar = await getMonthCostUsd(env)
+  if (spentSoFar >= MONTHLY_BUDGET_USD) {
+    return json(
+      {
+        error: `The AI assistant has reached its $${MONTHLY_BUDGET_USD.toFixed(2)} budget for this month. It'll be available again next month — everything else in SalesWhiz keeps working.`,
+        budgetReached: true,
+      },
+      402,
+      origin
+    )
+  }
 
   let upstream: Response
   try {
@@ -98,7 +154,33 @@ async function handleAnthropicChat(req: Request, env: Env, origin: string | null
 
   const data = await upstream.json() as AnthropicUpstreamResponse
   const text = data.content.find(b => b.type === 'text')?.text ?? ''
+
+  if (data.usage) {
+    // Don't let a KV write failure break a successful answer — log-and-continue.
+    try {
+      await addMonthCostUsd(env, estimateCostUsd(data.usage))
+    } catch {
+      // best-effort; next request's budget check just runs on slightly-stale spend
+    }
+  }
+
   return json({ text }, 200, origin)
+}
+
+async function handleAnthropicUsage(env: Env, origin: string | null): Promise<Response> {
+  const costUsd = await getMonthCostUsd(env)
+  const remainingUsd = Math.max(0, MONTHLY_BUDGET_USD - costUsd)
+  return json(
+    {
+      month: new Date().toISOString().slice(0, 7),
+      costUsd,
+      budgetUsd: MONTHLY_BUDGET_USD,
+      remainingUsd,
+      percentUsed: Math.min(100, (costUsd / MONTHLY_BUDGET_USD) * 100),
+    },
+    200,
+    origin
+  )
 }
 
 // ── LACRM ─────────────────────────────────────────────────────────────────
@@ -148,6 +230,10 @@ export default {
 
     if (pathname === '/api/anthropic/chat' && method === 'POST') {
       return handleAnthropicChat(req, env, origin)
+    }
+
+    if (pathname === '/api/anthropic/usage' && method === 'GET') {
+      return handleAnthropicUsage(env, origin)
     }
 
     if (pathname === '/api/lacrm/ping' && method === 'GET') {

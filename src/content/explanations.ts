@@ -79,6 +79,11 @@ export const EXPLANATIONS: Explanation[] = [
     term: 'Nurture sequence',
     text: 'A 4-touch check-in plan (a Day 0 email, a Day 7 call, a Day 21 email, and a Day 35 call) for Cold leads that have gone quiet. Each touch gets an AI-drafted starting point you edit and mark done yourself — nothing sends automatically. If a lead\'s score improves, it moves back to the main pipeline on its own.',
   },
+  {
+    id: 'ai-cost-budget',
+    term: 'AI Assistant Budget',
+    text: "SalesWhiz's AI features (Ask AI, and the nurture touch drafts) are the one part of the app with a cost that changes based on how much it's used, so there's a $20/month cap on it. Once the cap is reached, the AI assistant pauses itself until the 1st of the next month — everything else in SalesWhiz keeps working normally the whole time.",
+  },
 ]
 
 export const EXPLANATIONS_BY_ID: Record<string, Explanation> =
