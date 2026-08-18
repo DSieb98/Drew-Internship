@@ -1,6 +1,6 @@
 # M0 — Production Foundation
 
-**Goal:** Stand up the production SynetheixSales application as a fresh, browser-only build, and
+**Goal:** Stand up the production SalesWhiz application as a fresh, browser-only build, and
 bring across every Phase-1 capability that exists today — plus the small Phase-1 items that were
 never finished — so there is one real app, not a prototype, to build the rest of the system on.
 
@@ -19,7 +19,7 @@ LACRM integration that follows in M1.
 
 ## In scope
 
-- A production-quality, browser-only SynetheixSales app that reproduces the prototype's working
+- A production-quality, browser-only SalesWhiz app that reproduces the prototype's working
   Phase-1 experience:
   - **Lead ingestion (REQ-01)** — Excel/XLSX import in the browser, with column mapping and a
     preview before confirm. PII stays client-side.

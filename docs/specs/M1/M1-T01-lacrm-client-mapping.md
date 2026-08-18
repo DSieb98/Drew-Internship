@@ -1,14 +1,14 @@
 # M1-T01 — LACRM API client & field mapping
 
-**Goal:** Build the API client/adapter that talks to Less Annoying CRM, and map SynetheixSales's lead fields to LACRM's fields so data can flow accurately in both directions.
+**Goal:** Build the API client/adapter that talks to Less Annoying CRM, and map SalesWhiz's lead fields to LACRM's fields so data can flow accurately in both directions.
 
 **Depends on:** T00.
 
 ## In scope
 
 - An LACRM API client (auth via T00's mechanism, read + write operations for leads/contacts).
-- A field-mapping layer: SynetheixSales lead shape ↔ LACRM contact/lead shape, covering every category PRINCIPLE-01 names (lead records, pipeline stages, nurture state, scores, hot alert status, call history, notes).
-- Pipeline stage name mapping — SynetheixSales's current stage vocabulary (New Lead, Contacted, Qualified, Proposal Sent, Quote Requested, Follow-Up, Sample Sent) reconciled against LACRM's confirmed stage names (B-01, resolved — see `M2-pipeline-nurture-persistence.md` for the ordered list and flagged ambiguities to resolve here rather than guess).
+- A field-mapping layer: SalesWhiz lead shape ↔ LACRM contact/lead shape, covering every category PRINCIPLE-01 names (lead records, pipeline stages, nurture state, scores, hot alert status, call history, notes).
+- Pipeline stage name mapping — SalesWhiz's current stage vocabulary (New Lead, Contacted, Qualified, Proposal Sent, Quote Requested, Follow-Up, Sample Sent) reconciled against LACRM's confirmed stage names (B-01, resolved — see `M2-pipeline-nurture-persistence.md` for the ordered list and flagged ambiguities to resolve here rather than guess).
 - Basic connectivity/auth error handling (e.g., invalid credential, rate limit) surfaced clearly, not silently swallowed.
 
 ## Out of scope
@@ -61,7 +61,7 @@ through the Worker (D-21) — never call LACRM directly from the browser.
   implemented now (`leadToLacrmContactInput` / `lacrmContactToLeadPatch`).
 - **Pipeline stages** — implemented now. Resolution of the B-01 mapping ambiguities (done here,
   not guessed):
-  - `New Lead` / `Contacted` → **no LACRM stage.** These are pre-qualification, SynetheixSales-only
+  - `New Lead` / `Contacted` → **no LACRM stage.** These are pre-qualification, SalesWhiz-only
     states — REQ-04 only creates the CRM record at `Qualified`. The Contact still syncs
     (PRINCIPLE-01), just without a pipeline placement yet.
   - `Proposal Sent` / `Quote Requested` → both collapse into the single confirmed **`Quote`**

@@ -144,7 +144,7 @@ export interface StoreError {
 
 // ── Sync state (M1-T05) ──────────────────────────────────────────────────
 //
-// PRINCIPLE-01 ("LACRM wins"): a write SynetheixSales can't confirm happened
+// PRINCIPLE-01 ("LACRM wins"): a write SalesWhiz can't confirm happened
 // must never look identical to one that did. This is a single, global
 // picture of write-through health — not per-lead — surfaced in the UI so
 // Tim always knows whether his last action actually saved.

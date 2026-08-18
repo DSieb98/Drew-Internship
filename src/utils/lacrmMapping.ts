@@ -1,5 +1,5 @@
 /**
- * SynetheixSales Lead ↔ LACRM field mapping (M1-T01, extended in M1-T03/T04).
+ * SalesWhiz Lead ↔ LACRM field mapping (M1-T01, extended in M1-T03/T04).
  * Full category-by-category decision writeup: docs/specs/M1/M1-T01-lacrm-client-mapping.md,
  * M1-T03-lead-stage-sync.md, and M1-T04-extended-state-sync.md.
  *
@@ -17,6 +17,11 @@
  * Verified live: 0 existing "SalesForge Call Log" notes existed to migrate (call logging hadn't
  * been used in production yet), and real contact data reads correctly under the new field names
  * post-migration. See CLAUDE.md D-33.
+ *
+ * NOTE (D-35, 2026-08-13): app renamed again, SynetheixSales → SalesWhiz. The 13 CF_* names and
+ * CALL_LOG_NOTE_MARKER below deliberately still say "SynetheixSales" — they're live LACRM field/
+ * note-marker names, not display text, and weren't in scope for this rename (would need the same
+ * live EditCustomField/EditNote migration as D-33 to change safely). Don't blind-rename these.
  */
 
 import type { CallLog, Lead, NurtureTouch, ScoreCriterionResult } from '../store/types'
@@ -218,7 +223,7 @@ export function lacrmContactToLeadPatch(contact: LacrmContact): Partial<Lead> {
 //
 // LACRM has no per-record "call log" concept, so each CallLog is written as
 // one Note (CreateNote) attached to the contact, marked with a recognizable
-// first line so hydrate can tell SynetheixSales-authored call logs apart from
+// first line so hydrate can tell app-authored call logs apart from
 // any other note a user enters directly in LACRM (which this app doesn't
 // model and leaves untouched). CallLog.id becomes the Note's NoteId — a
 // real, durable, cross-device id instead of the old client-generated one.
@@ -234,7 +239,7 @@ export function callLogToNoteText(log: Omit<CallLog, 'id'>): string {
   })}`
 }
 
-/** Returns null for any note that isn't a SynetheixSales call-log note (wrong marker,
+/** Returns null for any note that isn't an app call-log note (wrong marker,
  *  or malformed) — callers filter those out rather than treating them as an error. */
 export function noteToCallLog(note: LacrmNote): CallLog | null {
   const newlineIdx = note.Note.indexOf('\n')
@@ -269,7 +274,7 @@ export function noteToCallLog(note: LacrmNote): CallLog | null {
 //
 // Ambiguities resolved here explicitly (not guessed) — flag to Drew if wrong:
 //   - New Lead / Contacted → no LACRM stage. These are pre-qualification,
-//     SynetheixSales-only states (REQ-04 only creates the CRM record at
+//     SalesWhiz-only states (REQ-04 only creates the CRM record at
 //     "Qualified"). Mapped to `null`: sync the Contact record itself
 //     (PRINCIPLE-01 still wants it durable), but don't place it in the
 //     pipeline yet.
