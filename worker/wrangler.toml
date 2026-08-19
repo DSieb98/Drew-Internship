@@ -29,3 +29,12 @@ enabled = true
 [[kv_namespaces]]
 binding = "AI_COST_KV"
 id = "476dad55705a4f5b977f5c2799984424"
+
+# In-app feedback ("Feedback" nav page) — stores requests Tim types in the app so Drew can
+# see them and update the app accordingly, instead of that living only in a conversation.
+# Same one-time-setup pattern as AI_COST_KV: Drew needs to run
+# `npx wrangler kv namespace create FEEDBACK_KV` once and paste the real "id" it prints in
+# here before this binding will work. See worker/README.md.
+[[kv_namespaces]]
+binding = "FEEDBACK_KV"
+id = "98583852aa4b4074a0452479ebb65bb7"

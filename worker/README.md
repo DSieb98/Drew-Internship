@@ -32,6 +32,11 @@ actually needs — see `src/index.ts` for why (purpose-built, not a generic pass
 - `POST /api/lacrm/custom-fields` — create a Contact custom field (`CreateCustomField`)
 - `GET /api/lacrm/notes` — list notes account-wide (`GetNotes`), used to read back call history
 - `POST /api/lacrm/notes` — attach a note to a contact (`CreateNote`), used to log a call
+- `POST /api/feedback` — `{ text: string }` → stores an in-app feedback/request entry (Feedback
+  nav page), so Tim can type anything he thinks would help and Drew can see it later
+- `GET /api/feedback` — all feedback entries, newest first → `{ entries: FeedbackEntry[] }`
+- `PATCH /api/feedback/:id` — `{ status: "new" | "reviewed" }`, marks a request reviewed once
+  Drew has acted on it
 
 ## One-time setup (Drew — these steps need a human with account access; Claude Code cannot do them)
 
@@ -88,6 +93,20 @@ Wrangler prints an `id = "..."` line — replace `REPLACE_WITH_KV_NAMESPACE_ID` 
 `wrangler.toml`'s `[[kv_namespaces]]` block with that value, then redeploy (`git push`, same
 as any other Worker change). Until this is done, `/api/anthropic/chat` and `/api/anthropic/usage`
 will fail (no bound KV namespace) — the rest of the app is unaffected.
+
+### Feedback page setup (one more one-time step, Drew)
+
+The Feedback nav page (Tim types anything he thinks would help; you see it and update the app)
+needs its own KV namespace, same reasoning as AI_COST_KV above:
+
+```bash
+cd worker
+npx wrangler kv namespace create FEEDBACK_KV
+```
+
+Wrangler prints an `id = "..."` line — replace the second `REPLACE_WITH_KV_NAMESPACE_ID` in
+`wrangler.toml` (the `FEEDBACK_KV` binding) with that value, then redeploy. Until this is done,
+`/api/feedback` will fail (no bound KV namespace) — the rest of the app is unaffected.
 
 ## Local development
 
