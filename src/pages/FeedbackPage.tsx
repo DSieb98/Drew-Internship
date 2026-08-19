@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useAnnounce } from '../hooks/useAnnounce'
+import { useSpeechToText } from '../hooks/useSpeechToText'
 import { submitFeedback, getFeedbackList, updateFeedbackStatus, type FeedbackEntry } from '../utils/feedbackApi'
 
 type SubmitStatus = 'idle' | 'sending' | 'error'
@@ -14,6 +15,32 @@ export default function FeedbackPage() {
   const [text, setText] = useState('')
   const [submitStatus, setSubmitStatus] = useState<SubmitStatus>('idle')
   const [submitError, setSubmitError] = useState('')
+  const [micError, setMicError] = useState('')
+
+  // Speak instead of type (Tim's request) — appends to whatever's already in the box rather
+  // than replacing it, so voice and typing can be mixed.
+  const speech = useSpeechToText(
+    transcript => {
+      setText(prev => (prev.trim() ? `${prev.trim()} ${transcript}` : transcript))
+      setMicError('')
+      announce('Got it.')
+    },
+    message => {
+      setMicError(message)
+      announce(message)
+    }
+  )
+
+  function handleMicClick() {
+    if (speech.listening) {
+      speech.stop()
+      announce('Stopped listening.')
+    } else {
+      setMicError('')
+      announce('Listening — speak your request.')
+      speech.start()
+    }
+  }
 
   const [entries, setEntries] = useState<FeedbackEntry[]>([])
   const [listLoading, setListLoading] = useState(true)
@@ -75,15 +102,31 @@ export default function FeedbackPage() {
       <form onSubmit={handleSubmit} className="feedback-form">
         <div className="settings-field">
           <label htmlFor="feedback-text" className="settings-field-label">Your request</label>
-          <textarea
-            id="feedback-text"
-            className="feedback-textarea"
-            rows={4}
-            value={text}
-            onChange={e => setText(e.target.value)}
-            placeholder="e.g. It would help if the Nurture page showed the lead's phone number too."
-            maxLength={4000}
-          />
+          <div className="feedback-textarea-row">
+            <textarea
+              id="feedback-text"
+              className="feedback-textarea"
+              rows={4}
+              value={text}
+              onChange={e => setText(e.target.value)}
+              placeholder="e.g. It would help if the Nurture page showed the lead's phone number too."
+              maxLength={4000}
+            />
+            {speech.supported && (
+              <button
+                type="button"
+                className={`feedback-mic-btn${speech.listening ? ' feedback-mic-btn--active' : ''}`}
+                onClick={handleMicClick}
+                aria-pressed={speech.listening}
+              >
+                <span aria-hidden="true">🎤</span>{' '}
+                {speech.listening ? 'Stop listening' : 'Speak instead'}
+              </button>
+            )}
+          </div>
+          {micError && (
+            <p className="dialog-error" role="alert">{micError}</p>
+          )}
         </div>
 
         {submitStatus === 'error' && (
