@@ -18,7 +18,7 @@ import SettingsPage from './pages/SettingsPage'
 const PAGE_TITLES: Record<string, string> = {
   '/': 'Today',
   '/all-leads': 'All Leads',
-  '/call-times': 'Call Times',
+  '/call-times': 'Map',
   '/history': 'History',
   '/my-list': 'My List',
   '/nurture': 'Nurture',
