@@ -12,16 +12,18 @@ import HistoryPage from './pages/HistoryPage'
 import MyListPage from './pages/MyListPage'
 import NurturePage from './pages/NurturePage'
 import ReportsPage from './pages/ReportsPage'
+import FeedbackPage from './pages/FeedbackPage'
 import SettingsPage from './pages/SettingsPage'
 
 const PAGE_TITLES: Record<string, string> = {
   '/': 'Today',
   '/all-leads': 'All Leads',
-  '/call-times': 'Map',
+  '/call-times': 'Call Times',
   '/history': 'History',
   '/my-list': 'My List',
   '/nurture': 'Nurture',
   '/reports': 'Reports',
+  '/feedback': 'Feedback',
   '/settings': 'Settings',
 }
 
@@ -79,6 +81,7 @@ export default function App() {
           <Route path="/my-list" element={<MyListPage />} />
           <Route path="/nurture" element={<NurturePage />} />
           <Route path="/reports" element={<ReportsPage />} />
+          <Route path="/feedback" element={<FeedbackPage />} />
           <Route path="/settings" element={<SettingsPage />} />
         </Routes>
       </main>

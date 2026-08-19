@@ -27,11 +27,12 @@ function NavItem({ to, label, end = false }: NavItemProps) {
 const NAV_SECTIONS: NavItemProps[] = [
   { to: '/', label: 'Today', end: true },
   { to: '/all-leads', label: 'All Leads' },
-  { to: '/call-times', label: 'Map' },
+  { to: '/call-times', label: 'Call Times' },
   { to: '/history', label: 'History' },
   { to: '/my-list', label: 'My List' },
   { to: '/nurture', label: 'Nurture' },
   { to: '/reports', label: 'Reports' },
+  { to: '/feedback', label: 'Feedback' },
   { to: '/settings', label: 'Settings' },
 ]
 

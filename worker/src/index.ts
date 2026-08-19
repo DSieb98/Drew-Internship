@@ -23,6 +23,12 @@ export interface Env {
   // safe to rely on if usage ever gets meaningfully concurrent. See worker/README.md for
   // the one-time `wrangler kv namespace create` step this binding needs.
   AI_COST_KV: KVNamespace
+  // In-app feedback ("Feedback" nav page): one JSON value per submitted request, keyed
+  // `feedback:<id>`, so Tim can type anything he thinks would help and Drew can see it next
+  // time he's in the app instead of it living only in a conversation neither of them can find
+  // again later. Same KV-is-good-enough-at-this-scale reasoning as AI_COST_KV — one user,
+  // occasional submissions, no need for a real database. See worker/README.md.
+  FEEDBACK_KV: KVNamespace
 }
 
 const ALLOWED_ORIGINS = new Set([
@@ -183,6 +189,77 @@ async function handleAnthropicUsage(env: Env, origin: string | null): Promise<Re
   )
 }
 
+// ── In-app feedback ("Feedback" nav page) ───────────────────────────────────
+// Deliberately not an LACRM concept (like Settings) — this is Tim-to-Drew
+// communication about the app itself, not lead data, so it has no natural
+// home in LACRM's contact/pipeline model. Stored in its own KV namespace
+// instead, same pattern as AI_COST_KV.
+
+interface FeedbackEntry {
+  id: string
+  text: string
+  submittedAt: string
+  status: 'new' | 'reviewed'
+}
+
+async function handleFeedbackSubmit(req: Request, env: Env, origin: string | null): Promise<Response> {
+  let body: { text?: string }
+  try {
+    body = await req.json()
+  } catch {
+    return json({ error: 'Invalid JSON body.' }, 400, origin)
+  }
+
+  const text = body.text?.trim()
+  if (!text) return json({ error: 'Missing "text".' }, 400, origin)
+  if (text.length > 4000) return json({ error: 'Request is too long (4000 characters max).' }, 400, origin)
+
+  const entry: FeedbackEntry = {
+    id: crypto.randomUUID(),
+    text,
+    submittedAt: new Date().toISOString(),
+    status: 'new',
+  }
+
+  await env.FEEDBACK_KV.put(`feedback:${entry.id}`, JSON.stringify(entry))
+  return json(entry, 200, origin)
+}
+
+async function handleFeedbackList(env: Env, origin: string | null): Promise<Response> {
+  const list = await env.FEEDBACK_KV.list({ prefix: 'feedback:' })
+  const entries = await Promise.all(
+    list.keys.map(async k => {
+      const raw = await env.FEEDBACK_KV.get(k.name)
+      return raw ? (JSON.parse(raw) as FeedbackEntry) : null
+    })
+  )
+  const sorted = entries
+    .filter((e): e is FeedbackEntry => e !== null)
+    .sort((a, b) => b.submittedAt.localeCompare(a.submittedAt))
+  return json({ entries: sorted }, 200, origin)
+}
+
+async function handleFeedbackUpdate(id: string, req: Request, env: Env, origin: string | null): Promise<Response> {
+  let body: { status?: string }
+  try {
+    body = await req.json()
+  } catch {
+    return json({ error: 'Invalid JSON body.' }, 400, origin)
+  }
+
+  if (body.status !== 'new' && body.status !== 'reviewed') {
+    return json({ error: 'status must be "new" or "reviewed".' }, 400, origin)
+  }
+
+  const key = `feedback:${id}`
+  const raw = await env.FEEDBACK_KV.get(key)
+  if (!raw) return json({ error: 'Not found.' }, 404, origin)
+
+  const entry = { ...(JSON.parse(raw) as FeedbackEntry), status: body.status }
+  await env.FEEDBACK_KV.put(key, JSON.stringify(entry))
+  return json(entry, 200, origin)
+}
+
 // ── LACRM ─────────────────────────────────────────────────────────────────
 
 interface LacrmSuccessEnvelope {
@@ -323,6 +400,21 @@ export default {
     if (pathname === '/api/lacrm/notes' && method === 'POST') {
       const body = await req.json().catch(() => ({})) as Record<string, unknown>
       return lacrmRoute('CreateNote', body, env, origin)
+    }
+
+    // ── In-app feedback ──────────────────────────────────────────────────
+
+    if (pathname === '/api/feedback' && method === 'POST') {
+      return handleFeedbackSubmit(req, env, origin)
+    }
+
+    if (pathname === '/api/feedback' && method === 'GET') {
+      return handleFeedbackList(env, origin)
+    }
+
+    const feedbackMatch = pathname.match(/^\/api\/feedback\/([^/]+)$/)
+    if (feedbackMatch && method === 'PATCH') {
+      return handleFeedbackUpdate(feedbackMatch[1], req, env, origin)
     }
 
     return json({ error: 'Not found.' }, 404, origin)
