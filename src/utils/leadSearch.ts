@@ -1,9 +1,14 @@
 /**
- * Local, deterministic lead search by company, contact name, city, or state — powers the AI
- * assistant's "Find a lead" navigation (M0-T11/D-30, extended for D-31 — "find the guy from
- * this city"). Kept as a plain client-side match rather than an LLM round trip: it's instant,
- * free, and can't hallucinate a lead that doesn't exist, which matters more here than any
- * fuzziness an AI call would add.
+ * Local, deterministic lead search by company, contact name, city, state, or industry — powers
+ * the AI assistant's "Find a lead" navigation (M0-T11/D-30, extended for D-31 — "find the guy
+ * from this city" — and D-45 — industry). Kept as a plain client-side match rather than an LLM
+ * round trip: it's instant, free, and can't hallucinate a lead that doesn't exist, which matters
+ * more here than any fuzziness an AI call would add.
+ *
+ * Industry matching (D-45) is plain substring matching against `Lead.industry`'s free text —
+ * there's no NAICS code system behind it, just whatever string was entered (LACRM custom field,
+ * CF_INDUSTRY). "Find restaurants" matches a lead whose industry field says "Restaurants" the
+ * same way "find the guy from dallas" matches on city — no classification/lookup table needed.
  */
 import type { Lead } from '../store/types'
 import { normalizeStateAbbr, stateFullName } from './usGeo'
@@ -43,6 +48,7 @@ function leadMatchScore(lead: Lead, query: string, queryTokens: string[]): numbe
     // Word-boundary check for the 2-letter state code itself ("tx"), since fieldScore's
     // reverse-match length guard deliberately excludes it.
     stateAbbr && queryTokens.includes(stateAbbr.toLowerCase()) ? 3 : -1,
+    lead.industry ? fieldScore(lead.industry, query) : -1,
   ]
   return Math.max(...scores)
 }
