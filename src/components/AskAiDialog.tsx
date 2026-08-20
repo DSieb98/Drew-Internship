@@ -6,31 +6,14 @@ import { useStore } from '../store/StoreContext'
 import { useAnnounce } from '../hooks/useAnnounce'
 import { askClaude } from '../utils/claudeApi'
 import { findLeads } from '../utils/leadSearch'
-import { MAX_LEADS_IN_PROMPT, selectLeadsForPrompt, summarizeLead } from '../utils/askAiPrompt'
+import { summarizeLead } from '../utils/askAiPrompt'
 import type { Lead } from '../store/types'
 
-type ScopeId = 'hot' | 'hot-warm' | 'all' | 'lead'
-
-// PII boundary (M0-T11, gap G5, open master-plan question 3): how many leads'
-// data goes into the prompt for a given question. Adjust SCOPES/DEFAULT_SCOPE
-// here once Drew rules on the open PII question — nothing else needs to change.
-// 'lead' (D-46) doesn't filter by status — its match() is never called, scopedLeads is built
-// from the picked lead instead — but it still needs an entry here to render as a radio option.
-const SCOPES: { id: ScopeId; label: string; match: (status: Lead['status']) => boolean }[] = [
-  { id: 'hot',      label: 'Hot leads only',    match: s => s === 'Hot' },
-  { id: 'hot-warm', label: 'Hot and Warm leads', match: s => s === 'Hot' || s === 'Warm' },
-  { id: 'all',      label: 'All leads',         match: () => true },
-  { id: 'lead',     label: 'A specific lead',    match: () => false },
-]
-const DEFAULT_SCOPE: ScopeId = 'hot'
-
+// D-47: "Ask a question" only ever asks about one specific lead now — Drew's call, to keep AI
+// budget spend predictable and simple to reason about. (Earlier versions offered Hot/Hot+Warm/
+// All-leads scopes; D-44's MAX_LEADS_IN_PROMPT cap had already made even "All leads" cheap, but
+// Drew wanted it gone as an option regardless, then went further and asked for single-lead-only.)
 const STARTER_QUESTIONS = [
-  'Who should I call first today?',
-  'Anyone gone quiet I should follow up with?',
-  'Summarize my hot leads for me.',
-]
-
-const LEAD_STARTER_QUESTIONS = [
   "What's the best way to approach this lead?",
   'Summarize this lead for me.',
   'What should I know before I call them?',
@@ -47,7 +30,6 @@ export default function AskAiDialog({ open, onClose }: AskAiDialogProps) {
   const store = useStore()
   const announce = useAnnounce()
   const navigate = useNavigate()
-  const [scope, setScope] = useState<ScopeId>(DEFAULT_SCOPE)
   const [question, setQuestion] = useState('')
   const [status, setStatus] = useState<AiStatus>('idle')
   const [answer, setAnswer] = useState('')
@@ -57,17 +39,11 @@ export default function AskAiDialog({ open, onClose }: AskAiDialogProps) {
   const [findResults, setFindResults] = useState<{ matches: Lead[]; totalMatches: number } | null>(null)
   const [lastFindQuery, setLastFindQuery] = useState('')
 
-  // D-46: "A specific lead" scope — a separate picker from "Find a lead" above, since that one
-  // navigates away rather than selecting a target for the question.
+  // Which lead the question is about — a separate picker from "Find a lead" above, since that
+  // one navigates away rather than selecting a target for the question.
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null)
   const [leadPickerQuery, setLeadPickerQuery] = useState('')
   const [leadPickerResults, setLeadPickerResults] = useState<{ matches: Lead[]; totalMatches: number } | null>(null)
-
-  const activeScope = SCOPES.find(s => s.id === scope) ?? SCOPES[0]
-  const scopedLeads = scope === 'lead'
-    ? (selectedLead ? [selectedLead] : [])
-    : store.leads.filter(l => activeScope.match(l.status))
-  const { included: promptLeads, truncated: promptTruncated } = selectLeadsForPrompt(scopedLeads)
 
   function reset() {
     setQuestion('')
@@ -144,30 +120,20 @@ export default function AskAiDialog({ open, onClose }: AskAiDialogProps) {
 
   async function handleAsk(e: React.FormEvent) {
     e.preventDefault()
-    if (!question.trim()) return
-    if (scope === 'lead' && !selectedLead) return
+    if (!question.trim() || !selectedLead) return
     setStatus('loading')
     setError('')
     setAnswer('')
     announce('Thinking, please wait…')
 
     const today = new Date().toISOString().split('T')[0]
-    const leadLines = promptLeads.length > 0
-      ? promptLeads.map(summarizeLead).join('\n')
-      : '(no leads in this scope)'
 
-    const leadsInScopeLine = scope === 'lead' && selectedLead
-      ? `Lead in scope — ${selectedLead.company}:`
-      : promptTruncated
-        ? `Leads in scope (showing the ${MAX_LEADS_IN_PROMPT} highest-scoring of ${scopedLeads.length} leads in scope — ${activeScope.label}):`
-        : `Leads in scope (${scopedLeads.length} of ${store.leads.length} total leads — ${activeScope.label}):`
-
-    const prompt = `You are a warm, plain-language sales assistant inside SalesWhiz, a CRM dashboard for a salesperson named Tim. Answer the question below using only the lead data provided. Be concise, concrete, and avoid jargon. If the data doesn't answer the question, say so honestly instead of guessing.${promptTruncated ? ' Note: not every lead in scope is listed below — say so if the question seems to need the full set.' : ''}
+    const prompt = `You are a warm, plain-language sales assistant inside SalesWhiz, a CRM dashboard for a salesperson named Tim. Answer the question below using only the lead data provided. Be concise, concrete, and avoid jargon. If the data doesn't answer the question, say so honestly instead of guessing.
 
 Today's date: ${today}
 
-${leadsInScopeLine}
-${leadLines}
+Lead in scope — ${selectedLead.company}:
+${summarizeLead(selectedLead)}
 
 Question: ${question.trim()}`
 
@@ -194,7 +160,7 @@ Question: ${question.trim()}`
     >
       <h2 className="dialog-heading">Ask your AI assistant</h2>
       <p className="dialog-body">
-        Ask a plain-English question about your leads and get a quick answer, or find a specific
+        Ask a plain-English question about a specific lead and get a quick answer, or find a
         lead below and jump straight to it.
         <ExplainTerm id="ai-assistant" />
       </p>
@@ -257,97 +223,69 @@ Question: ${question.trim()}`
       )}
 
       <h3 className="today-section-heading">Ask a question</h3>
-      <fieldset className="log-call-outcome-group askai-scope-group">
-        <legend className="settings-field-label">
-          {scope === 'lead'
-            ? selectedLead ? `Asking about ${selectedLead.company}` : 'Asking about a specific lead'
-            : `Leads to consider (${scopedLeads.length} of ${store.leads.length})`}
-        </legend>
-        {SCOPES.map(s => (
-          <label key={s.id} className="log-call-outcome-option">
-            <input
-              type="radio"
-              name="askai-scope"
-              value={s.id}
-              checked={scope === s.id}
-              onChange={() => setScope(s.id)}
-            />
-            {s.label}
-          </label>
-        ))}
-      </fieldset>
 
-      {scope === 'lead' && (
-        selectedLead ? (
-          <p className="askai-pii-note">
-            Asking about <strong>{selectedLead.company}</strong>
-            {selectedLead.contactName ? ` — ${selectedLead.contactName}` : ''}.{' '}
-            <button type="button" className="btn-secondary" onClick={clearSelectedLead}>
-              Change lead
-            </button>
-          </p>
-        ) : (
-          <>
-            <form onSubmit={handleLeadPickerSearch} className="askai-find-form">
-              <div className="settings-field">
-                <label htmlFor="askai-lead-picker-query" className="settings-field-label">
-                  Which lead is this about?
-                </label>
-                <div className="askai-find-row">
-                  <input
-                    id="askai-lead-picker-query"
-                    type="text"
-                    className="askai-find-input"
-                    value={leadPickerQuery}
-                    onChange={e => setLeadPickerQuery(e.target.value)}
-                    placeholder="e.g. Acme Corp or Jane Smith"
-                  />
-                  <button type="submit" className="btn-secondary" disabled={!leadPickerQuery.trim()}>
-                    Search
-                  </button>
-                </div>
+      {selectedLead ? (
+        <p className="askai-pii-note">
+          Asking about <strong>{selectedLead.company}</strong>
+          {selectedLead.contactName ? ` — ${selectedLead.contactName}` : ''}.{' '}
+          <button type="button" className="btn-secondary" onClick={clearSelectedLead}>
+            Change lead
+          </button>
+        </p>
+      ) : (
+        <>
+          <form onSubmit={handleLeadPickerSearch} className="askai-find-form">
+            <div className="settings-field">
+              <label htmlFor="askai-lead-picker-query" className="settings-field-label">
+                Which lead is this about?
+              </label>
+              <div className="askai-find-row">
+                <input
+                  id="askai-lead-picker-query"
+                  type="text"
+                  className="askai-find-input"
+                  value={leadPickerQuery}
+                  onChange={e => setLeadPickerQuery(e.target.value)}
+                  placeholder="e.g. Acme Corp or Jane Smith"
+                />
+                <button type="submit" className="btn-secondary" disabled={!leadPickerQuery.trim()}>
+                  Search
+                </button>
               </div>
-            </form>
+            </div>
+          </form>
 
-            {leadPickerResults !== null && (
-              leadPickerResults.totalMatches === 0 ? (
-                <p className="askai-find-empty" role="status">No leads found for &ldquo;{leadPickerQuery}&rdquo;.</p>
-              ) : (
-                <ul className="askai-find-results" aria-label={`${leadPickerResults.totalMatches} matching leads`}>
-                  {leadPickerResults.matches.map(lead => (
-                    <li key={lead.id}>
-                      <button
-                        type="button"
-                        className="askai-find-result-btn"
-                        onClick={() => pickLead(lead)}
-                      >
-                        {lead.company}
-                        {lead.contactName ? ` — ${lead.contactName}` : ''}
-                        {' '}<span className="askai-find-result-status">({lead.status})</span>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              )
-            )}
-          </>
-        )
+          {leadPickerResults !== null && (
+            leadPickerResults.totalMatches === 0 ? (
+              <p className="askai-find-empty" role="status">No leads found for &ldquo;{leadPickerQuery}&rdquo;.</p>
+            ) : (
+              <ul className="askai-find-results" aria-label={`${leadPickerResults.totalMatches} matching leads`}>
+                {leadPickerResults.matches.map(lead => (
+                  <li key={lead.id}>
+                    <button
+                      type="button"
+                      className="askai-find-result-btn"
+                      onClick={() => pickLead(lead)}
+                    >
+                      {lead.company}
+                      {lead.contactName ? ` — ${lead.contactName}` : ''}
+                      {' '}<span className="askai-find-result-status">({lead.status})</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )
+          )}
+        </>
       )}
 
       <p className="askai-pii-note">
-        Only company, status, score, deal size, stage, and contact name are sent for the leads
+        Only company, status, score, deal size, stage, and contact name are sent for the lead
         above — never email, phone, or your private notes.
       </p>
-      {promptTruncated && (
-        <p className="askai-pii-note">
-          This scope has {scopedLeads.length} leads — more than the AI can consider at once, so
-          only the {MAX_LEADS_IN_PROMPT} highest-scoring are included. Narrow the scope above for
-          a complete answer over a smaller group.
-        </p>
-      )}
 
       <div className="askai-suggestions" role="group" aria-label="Suggested questions">
-        {(scope === 'lead' ? LEAD_STARTER_QUESTIONS : STARTER_QUESTIONS).map(q => (
+        {STARTER_QUESTIONS.map(q => (
           <button
             key={q}
             type="button"
@@ -369,7 +307,7 @@ Question: ${question.trim()}`
             rows={3}
             value={question}
             onChange={e => setQuestion(e.target.value)}
-            placeholder="e.g. Who should I call first today?"
+            placeholder="e.g. What should I say when I call them?"
           />
         </div>
 
@@ -387,7 +325,7 @@ Question: ${question.trim()}`
           <button
             type="submit"
             className="btn-primary"
-            disabled={status === 'loading' || !question.trim() || (scope === 'lead' && !selectedLead)}
+            disabled={status === 'loading' || !question.trim() || !selectedLead}
           >
             {status === 'loading' ? 'Asking…' : 'Ask'}
           </button>
