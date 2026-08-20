@@ -4,3 +4,5 @@
 
 ANTHROPIC_API_KEY=
 LACRM_API_KEY=
+EXA_API_KEY=
+# PERPLEXITY_API_KEY not needed — D-48's Perplexity code path is dormant/unrouted

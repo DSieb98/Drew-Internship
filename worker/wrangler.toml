@@ -3,8 +3,9 @@
 # Pages static site never embeds them client-side. Deployed independently of
 # the static site — see .github/workflows/deploy-worker.yml.
 #
-# Secrets (ANTHROPIC_API_KEY, LACRM_API_KEY) are NOT set here — set them once
-# via `wrangler secret put <NAME>` (see worker/README.md).
+# Secrets (ANTHROPIC_API_KEY, LACRM_API_KEY, EXA_API_KEY — D-48) are NOT set here — set them
+# once via `wrangler secret put <NAME>` (see worker/README.md). PERPLEXITY_API_KEY is not
+# needed — D-48's Perplexity code path is dormant/unrouted (no free-tier key available).
 #
 # NOTE (D-32): renamed from "salesforge-api" 2026-08-12. Deploying this creates
 # a NEW Worker at a new *.workers.dev URL rather than renaming the old one in

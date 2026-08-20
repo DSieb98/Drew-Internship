@@ -16,6 +16,22 @@ actually needs — see `src/index.ts` for why (purpose-built, not a generic pass
   spend reaches the cap, instead of calling Anthropic.
 - `GET /api/anthropic/usage` — current month's AI spend (D-39) → `{ month, costUsd, budgetUsd,
   remainingUsd, percentUsed }`, read by the Reports page's "AI Assistant Budget" section
+- `POST /api/company-research/search` — `{ company, city?, state?, industry? }` →
+  `{ text, citations }`. Backs the LeadCard "Research company" button (D-48): calls Exa's
+  Answer API (search + synthesized summary + citations in one call). Originally built against
+  Perplexity, but Perplexity has no free-tier key available — that code path
+  (`handleCompanyResearchPerplexity` in `src/index.ts`) is kept but unrouted/dormant, not
+  deleted, in case a Perplexity key becomes viable later. Path name is deliberately
+  provider-neutral since the backing provider has already changed once. No spend cap yet
+  (unlike D-39's Anthropic budget) — flagged in D-48 as a follow-up if usage grows enough to
+  matter.
+- `POST /api/company-research/enrich` — `{ company, city?, state?, industry? }` →
+  `{ runId, status }`. Starts an employees/revenue/industry lookup via Exa's Agent API (D-49) —
+  async, so this only creates the run; poll the endpoint below for the result.
+- `GET /api/company-research/enrich/:runId` — `{ status }` while still running, or
+  `{ status: "completed", structured: { employees, annualRevenue, industry }, citations }` /
+  `{ status: "failed"|"cancelled", error }` once terminal. Display-only on the client for now
+  (D-49) — nothing here writes to a Lead.
 - `GET /api/lacrm/ping` — connectivity check (calls LACRM's `GetUser`) → current user info
 - `GET /api/lacrm/contacts?search=` — search contacts (`GetContacts`)
 - `GET /api/lacrm/contacts/:id` — get one contact (`GetContact`)
@@ -53,11 +69,16 @@ actually needs — see `src/index.ts` for why (purpose-built, not a generic pass
    to the [Programmer API settings page](https://account.lessannoyingcrm.com/app/Settings/Api) and
    generate a key. This is a single key (LACRM's v2 API) — not the older UserCode+APIToken pair
    some third-party docs reference.
-4. **Set the two secrets** (never go in the repo or `wrangler.toml`):
+4. **Set the secrets** (never go in the repo or `wrangler.toml`):
    ```bash
    npx wrangler secret put ANTHROPIC_API_KEY
    npx wrangler secret put LACRM_API_KEY
+   npx wrangler secret put EXA_API_KEY
    ```
+   The Exa key is generated at https://dashboard.exa.ai/api-keys (free tier available). Until
+   this secret is set, `/api/company-research/search` (LeadCard's "Research company" button)
+   fails with a 502 — the rest of the app is unaffected. `PERPLEXITY_API_KEY` does **not** need
+   to be set — that code path is dormant (D-48), kept only for possible future use.
 5. **Deploy once manually** to get the Worker's URL:
    ```bash
    npx wrangler deploy
