@@ -1,7 +1,8 @@
 /**
- * D-30/D-31 — AI assistant "Find a lead" navigation. Proves matching works by company/contact
- * name (D-30) and by city/state, including a natural phrase like "the guy from this city"
- * rather than requiring the exact city name alone (D-31).
+ * D-30/D-31/D-45 — AI assistant "Find a lead" navigation. Proves matching works by
+ * company/contact name (D-30), by city/state including a natural phrase like "the guy from
+ * this city" rather than requiring the exact city name alone (D-31), and by industry's free
+ * text — no NAICS codes involved (D-45).
  */
 import { describe, it, expect } from 'vitest'
 import { findLeads } from './leadSearch'
@@ -86,6 +87,26 @@ describe('findLeads', () => {
     // "context" contains "tx" as a substring — must not spuriously match Texas leads.
     const tx = makeLead({ company: 'A', city: 'Dallas', state: 'TX' })
     const { matches } = findLeads([tx], 'give me context please')
+    expect(matches).toHaveLength(0)
+  })
+
+  it('matches by industry — plain free-text substring, no NAICS codes involved', () => {
+    const restaurant = makeLead({ company: 'A', industry: 'Restaurants' })
+    const retail = makeLead({ company: 'B', industry: 'Retail' })
+    const { matches } = findLeads([restaurant, retail], 'restaurant')
+    expect(matches.map(l => l.id)).toEqual([restaurant.id])
+  })
+
+  it('matches a natural phrase mentioning the industry', () => {
+    const healthcare = makeLead({ company: 'A', industry: 'Healthcare' })
+    const retail = makeLead({ company: 'B', industry: 'Retail' })
+    const { matches } = findLeads([healthcare, retail], 'someone in healthcare')
+    expect(matches.map(l => l.id)).toEqual([healthcare.id])
+  })
+
+  it('does not match industry when the lead has none set', () => {
+    const noIndustry = makeLead({ company: 'A', industry: null })
+    const { matches } = findLeads([noIndustry], 'restaurants')
     expect(matches).toHaveLength(0)
   })
 
