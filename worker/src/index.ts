@@ -16,6 +16,14 @@
 export interface Env {
   ANTHROPIC_API_KEY: string
   LACRM_API_KEY: string
+  // Company research button (LeadCard) — D-48. Originally built against Perplexity's Chat
+  // Completions API, but Perplexity has no free-tier key available, so the live path is now
+  // Exa's Answer API instead (search + synthesized summary + citations in one call, same
+  // shape). EXA_API_KEY is the one actually used; PERPLEXITY_API_KEY / the Perplexity handler
+  // are kept dormant in this file (unused, not wired to a route) in case a Perplexity key
+  // becomes viable later — see handleCompanyResearchPerplexity below.
+  EXA_API_KEY: string
+  PERPLEXITY_API_KEY: string
   // AI cost-budget tracking (D-39) — Workers KV namespace, one JSON-string-of-a-number
   // value per calendar month ("usage:YYYY-MM" -> cumulative USD spent). KV has no atomic
   // increment, so two requests landing in the same instant could race and one update could
@@ -40,6 +48,10 @@ const ALLOWED_ORIGINS = new Set([
 const ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages'
 const ANTHROPIC_MODEL = 'claude-haiku-4-5'
 const LACRM_URL = 'https://api.lessannoyingcrm.com/v2/'
+const PERPLEXITY_URL = 'https://api.perplexity.ai/chat/completions'
+const PERPLEXITY_MODEL = 'sonar'
+const EXA_URL = 'https://api.exa.ai/answer'
+const EXA_AGENT_RUNS_URL = 'https://api.exa.ai/agent/runs'
 
 // ── AI cost budget (D-39) ────────────────────────────────────────────────
 // Drew's confirmed hard cap: the AI assistant (Anthropic calls) may not cost
@@ -189,6 +201,294 @@ async function handleAnthropicUsage(env: Env, origin: string | null): Promise<Re
   )
 }
 
+// ── Company research (LeadCard "Research company" button, D-48) ────────────
+// Each request is one user-initiated click for one company — no bulk/automated querying —
+// and the answer is shown to Tim as-is inside SalesWhiz, never stored or redistributed.
+// No lead PII beyond company name/city/state/industry is ever sent (see handleCompanyResearch*
+// below) — same PII boundary as the Ask AI assistant (D-44/D-46).
+
+interface CompanyResearchBody {
+  company?: string
+  city?: string
+  state?: string
+  industry?: string
+}
+
+function companyResearchPrompt(body: CompanyResearchBody): { company: string; prompt: string } | { error: string } {
+  const company = body.company?.trim()
+  if (!company) return { error: 'Missing "company".' }
+
+  const location = [body.city?.trim(), body.state?.trim()].filter(Boolean).join(', ')
+  const industry = body.industry?.trim()
+
+  const prompt = `Give a concise, factual summary of the company "${company}"${location ? ` (based in ${location})` : ''}${industry ? `, which is in the ${industry} industry` : ''}. Cover what they do, approximate size if known, and any recent notable news. Keep it under 150 words and stick to verifiable public information — say plainly if you can't find reliable information rather than guessing.`
+
+  return { company, prompt }
+}
+
+// ── Live path: Exa's Answer API ─────────────────────────────────────────────
+// POST https://api.exa.ai/answer, `x-api-key: <key>` header, { query } body → one call does
+// both the web search and the synthesized summary+citations (verified against Exa's real docs
+// at https://exa.ai/docs/reference/answer 2026-08-20, not guessed — same habit as D-23/D-27b).
+// Chosen over Perplexity (no free-tier key available) per Drew's pick 2026-08-20.
+
+interface ExaUpstreamCitation {
+  url?: string
+}
+
+interface ExaUpstreamResponse {
+  answer?: string
+  citations?: ExaUpstreamCitation[]
+}
+
+interface ExaUpstreamError {
+  error?: string
+  message?: string
+}
+
+async function handleCompanyResearchExa(req: Request, env: Env, origin: string | null): Promise<Response> {
+  let body: CompanyResearchBody
+  try {
+    body = await req.json()
+  } catch {
+    return json({ error: 'Invalid JSON body.' }, 400, origin)
+  }
+
+  const built = companyResearchPrompt(body)
+  if ('error' in built) return json({ error: built.error }, 400, origin)
+
+  let upstream: Response
+  try {
+    upstream = await fetch(EXA_URL, {
+      method: 'POST',
+      headers: {
+        'x-api-key': env.EXA_API_KEY,
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({ query: built.prompt }),
+    })
+  } catch {
+    return json({ error: 'Could not reach the company research service right now. Please try again shortly.' }, 502, origin)
+  }
+
+  if (!upstream.ok) {
+    const errBody = await upstream.json().catch(() => ({})) as ExaUpstreamError
+    return json({ error: errBody.error ?? errBody.message ?? `Company research error (${upstream.status}).` }, 502, origin)
+  }
+
+  const data = await upstream.json() as ExaUpstreamResponse
+  const text = typeof data.answer === 'string' ? data.answer : ''
+  const citations = (data.citations ?? []).map(c => c.url).filter((u): u is string => Boolean(u))
+  return json({ text, citations }, 200, origin)
+}
+
+// ── Company enrichment (employees / revenue / industry) via Exa's Agent API ─
+// Per the build-with-exa skill (2026-08-20): "list-building and enrichment workflows belong
+// on the Agent API (/agent), not /search or /answer" — structured field extraction like this
+// is exactly that shape, so it's a genuinely different endpoint from handleCompanyResearchExa
+// above, not a variant of it. The Agent API is async: POST /agent/runs returns a run
+// immediately, the caller must poll GET /agent/runs/{id} to a terminal status before reading
+// results — see handleCreateEnrichmentRun / handleGetEnrichmentRun below and the skill's
+// references/agent.md. `effort: 'low'` (cheap/fast) since this is three narrow, well-defined
+// facts, not open-ended research.
+//
+// D-49, display-only for now (Drew's call): results are returned to the client and shown to
+// Tim, but nothing here writes to a Lead — that's a deliberate, separate decision for later,
+// gated on human approval when it happens (see CompanyResearchDialog.tsx).
+
+const ENRICHMENT_OUTPUT_SCHEMA = {
+  type: 'object',
+  properties: {
+    employees: {
+      type: ['number', 'null'],
+      description: 'Approximate current number of employees at the company. Null if not reliably determinable from public sources.',
+    },
+    annualRevenue: {
+      type: ['number', 'null'],
+      description: 'Approximate current annual revenue in US dollars (a plain number, not a string). Null if not reliably determinable from public sources.',
+    },
+    industry: {
+      type: ['string', 'null'],
+      description: "The company's primary industry or sector, in a few words. Null if not reliably determinable from public sources.",
+    },
+  },
+  required: ['employees', 'annualRevenue', 'industry'],
+}
+
+interface EnrichmentFields {
+  employees: number | null
+  annualRevenue: number | null
+  industry: string | null
+}
+
+interface ExaAgentCreateResponse {
+  id?: string
+  status?: string
+}
+
+interface ExaAgentRunResponse {
+  status?: string
+  output?: {
+    text?: string
+    structured?: EnrichmentFields
+    grounding?: unknown
+  }
+  error?: string
+}
+
+async function handleCreateEnrichmentRun(req: Request, env: Env, origin: string | null): Promise<Response> {
+  let body: CompanyResearchBody
+  try {
+    body = await req.json()
+  } catch {
+    return json({ error: 'Invalid JSON body.' }, 400, origin)
+  }
+
+  const company = body.company?.trim()
+  if (!company) return json({ error: 'Missing "company".' }, 400, origin)
+
+  const location = [body.city?.trim(), body.state?.trim()].filter(Boolean).join(', ')
+  const industryHint = body.industry?.trim()
+
+  const query = `Research the company "${company}"${location ? ` (based in ${location})` : ''}${industryHint ? `, believed to be in the ${industryHint} industry` : ''} and find: (1) its approximate current number of employees, (2) its approximate current annual revenue in US dollars, (3) its primary industry or sector. Use reliable, recent public sources (its own website, LinkedIn, Crunchbase, news coverage). If a value can't be reliably determined, return null for that field rather than guessing.`
+
+  let upstream: Response
+  try {
+    upstream = await fetch(EXA_AGENT_RUNS_URL, {
+      method: 'POST',
+      headers: {
+        'x-api-key': env.EXA_API_KEY,
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        query,
+        effort: 'low',
+        outputSchema: ENRICHMENT_OUTPUT_SCHEMA,
+      }),
+    })
+  } catch {
+    return json({ error: 'Could not reach the company research service right now. Please try again shortly.' }, 502, origin)
+  }
+
+  if (!upstream.ok) {
+    const errBody = await upstream.json().catch(() => ({})) as ExaUpstreamError
+    return json({ error: errBody.error ?? errBody.message ?? `Company research error (${upstream.status}).` }, 502, origin)
+  }
+
+  const data = await upstream.json() as ExaAgentCreateResponse
+  if (!data.id) return json({ error: 'Company research service did not return a run id.' }, 502, origin)
+  return json({ runId: data.id, status: data.status ?? 'pending' }, 200, origin)
+}
+
+// The Agent API's docs describe `output.grounding` as "citations for text or structured
+// fields" without pinning down an exact shape — rather than guess a schema, this walks
+// whatever comes back and pulls out any `url` string it finds, at any nesting depth.
+function extractCitationUrls(grounding: unknown): string[] {
+  const urls = new Set<string>()
+  function visit(node: unknown) {
+    if (!node || typeof node !== 'object') return
+    if (Array.isArray(node)) {
+      node.forEach(visit)
+      return
+    }
+    const obj = node as Record<string, unknown>
+    if (typeof obj.url === 'string') urls.add(obj.url)
+    Object.values(obj).forEach(visit)
+  }
+  visit(grounding)
+  return Array.from(urls)
+}
+
+async function handleGetEnrichmentRun(runId: string, env: Env, origin: string | null): Promise<Response> {
+  let upstream: Response
+  try {
+    upstream = await fetch(`${EXA_AGENT_RUNS_URL}/${encodeURIComponent(runId)}`, {
+      headers: { 'x-api-key': env.EXA_API_KEY },
+    })
+  } catch {
+    return json({ error: 'Could not reach the company research service right now. Please try again shortly.' }, 502, origin)
+  }
+
+  if (!upstream.ok) {
+    const errBody = await upstream.json().catch(() => ({})) as ExaUpstreamError
+    return json({ error: errBody.error ?? errBody.message ?? `Company research error (${upstream.status}).` }, 502, origin)
+  }
+
+  const data = await upstream.json() as ExaAgentRunResponse
+  const status = data.status ?? 'unknown'
+
+  // Only a "completed" run carries real output — reading structured/grounding on any other
+  // status would make a still-running or failed run look like an empty success (skill's own
+  // Agent API pitfall list warns about exactly this).
+  if (status === 'completed') {
+    return json(
+      { status, structured: data.output?.structured ?? null, citations: extractCitationUrls(data.output?.grounding) },
+      200,
+      origin
+    )
+  }
+  if (status === 'failed' || status === 'cancelled') {
+    return json({ status, error: data.error ?? 'The company research run did not complete successfully.' }, 200, origin)
+  }
+  return json({ status }, 200, origin)
+}
+
+// ── Dormant: Perplexity's Chat Completions API ──────────────────────────────
+// Not wired to a route — no free-tier Perplexity key is available (2026-08-20), so this isn't
+// callable today. Kept here, unused, in case that changes later; PERPLEXITY_API_KEY in Env is
+// likewise unused while this stays dormant. Uses the search-augmented "sonar" model — the same
+// product surface Perplexity's own chat UI calls, via their documented API with a key rather
+// than by automating/scraping the perplexity.ai website (which its Terms of Service prohibit).
+
+interface PerplexityUpstreamResponse {
+  choices: Array<{ message: { content: string } }>
+  citations?: string[]
+}
+
+interface PerplexityUpstreamError {
+  error?: { message?: string }
+}
+
+// Exported (not imported anywhere) rather than left module-private, purely so `noUnusedLocals`
+// doesn't flag intentionally-dormant code as dead code by accident.
+export async function handleCompanyResearchPerplexity(req: Request, env: Env, origin: string | null): Promise<Response> {
+  let body: CompanyResearchBody
+  try {
+    body = await req.json()
+  } catch {
+    return json({ error: 'Invalid JSON body.' }, 400, origin)
+  }
+
+  const built = companyResearchPrompt(body)
+  if ('error' in built) return json({ error: built.error }, 400, origin)
+
+  let upstream: Response
+  try {
+    upstream = await fetch(PERPLEXITY_URL, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${env.PERPLEXITY_API_KEY}`,
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: PERPLEXITY_MODEL,
+        messages: [{ role: 'user', content: built.prompt }],
+      }),
+    })
+  } catch {
+    return json({ error: 'Could not reach the company research service right now. Please try again shortly.' }, 502, origin)
+  }
+
+  if (!upstream.ok) {
+    const errBody = await upstream.json().catch(() => ({})) as PerplexityUpstreamError
+    return json({ error: errBody.error?.message ?? `Company research error (${upstream.status}).` }, 502, origin)
+  }
+
+  const data = await upstream.json() as PerplexityUpstreamResponse
+  const text = data.choices?.[0]?.message?.content ?? ''
+  return json({ text, citations: data.citations ?? [] }, 200, origin)
+}
+
 // ── In-app feedback ("Feedback" nav page) ───────────────────────────────────
 // Deliberately not an LACRM concept (like Settings) — this is Tim-to-Drew
 // communication about the app itself, not lead data, so it has no natural
@@ -311,6 +611,22 @@ export default {
 
     if (pathname === '/api/anthropic/usage' && method === 'GET') {
       return handleAnthropicUsage(env, origin)
+    }
+
+    // D-48: provider-neutral path name on purpose — the backing search provider has already
+    // switched once (Perplexity → Exa) without any reason for the app-facing contract to change.
+    if (pathname === '/api/company-research/search' && method === 'POST') {
+      return handleCompanyResearchExa(req, env, origin)
+    }
+
+    // D-49: employees/revenue/industry enrichment via Exa's Agent API — async create+poll,
+    // see handleCreateEnrichmentRun/handleGetEnrichmentRun above.
+    if (pathname === '/api/company-research/enrich' && method === 'POST') {
+      return handleCreateEnrichmentRun(req, env, origin)
+    }
+    const enrichRunMatch = pathname.match(/^\/api\/company-research\/enrich\/([^/]+)$/)
+    if (enrichRunMatch && method === 'GET') {
+      return handleGetEnrichmentRun(enrichRunMatch[1], env, origin)
     }
 
     if (pathname === '/api/lacrm/ping' && method === 'GET') {

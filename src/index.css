@@ -892,6 +892,25 @@ body {
 }
 .lead-card-pin-btn--pinned:hover { background: #fef3c7; }
 
+/* ── Research company button (Perplexity-backed) ─────────────────── */
+.lead-card-research-btn {
+  padding: 6px 14px;
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #334155;
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+.lead-card-research-btn:hover { background: #e2e8f0; }
+.lead-card-research-btn:focus-visible {
+  outline: 3px solid #f59e0b;
+  outline-offset: 2px;
+}
+
 /* ── Open in LACRM link (styled as a button, opens the CRM record) ── */
 .lead-card-lacrm-btn {
   display: inline-block;
@@ -1503,6 +1522,48 @@ body {
   font-size: 0.875rem;
   font-weight: 600;
   color: #475569;
+}
+
+/* ── Company research dialog (LeadCard "Research company" button) ── */
+.research-dialog-content {
+  max-width: 560px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+.research-enrichment-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+  margin: 0 0 12px;
+  padding: 14px 16px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+}
+.research-enrichment-fields dt {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  color: #64748b;
+  margin: 0 0 2px;
+}
+.research-enrichment-fields dd {
+  margin: 0;
+  font-size: 1rem;
+  color: #0f172a;
+}
+.research-citations {
+  margin-bottom: 14px;
+}
+.research-citations ul {
+  margin: 0;
+  padding-left: 1.25rem;
+  font-size: 0.8125rem;
+}
+.research-citations li {
+  margin-bottom: 4px;
+  word-break: break-all;
 }
 
 /* ── Ask AI assistant dialog (T11) ───────────────────────────── */

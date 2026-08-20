@@ -1,8 +1,9 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import type { Lead, Settings } from '../store/types'
 import { getTZInfo } from '../utils/tz'
 import { isGoneQuiet } from '../utils/leadActivity'
 import { lacrmContactUrl } from '../utils/lacrmMapping'
+import CompanyResearchDialog from './CompanyResearchDialog'
 
 interface LeadCardProps {
   lead: Lead
@@ -19,6 +20,7 @@ function dealValueLabel(value: number, settings: Settings): 'High' | 'Medium' | 
 }
 
 export default function LeadCard({ lead, settings, now = new Date(), onOpen, onTogglePin }: LeadCardProps) {
+  const [researchOpen, setResearchOpen] = useState(false)
   const tzInfo = useMemo(
     () => (lead.timezone ? getTZInfo(lead.timezone, now) : null),
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -131,7 +133,17 @@ export default function LeadCard({ lead, settings, now = new Date(), onOpen, onT
         >
           Open in LACRM
         </a>
+        <button
+          type="button"
+          className="lead-card-research-btn"
+          aria-label={`Research ${lead.company} with AI-powered web search`}
+          onClick={() => setResearchOpen(true)}
+        >
+          Research company
+        </button>
       </div>
+
+      <CompanyResearchDialog lead={lead} open={researchOpen} onClose={() => setResearchOpen(false)} />
     </article>
   )
 }
